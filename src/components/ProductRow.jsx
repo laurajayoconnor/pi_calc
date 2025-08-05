@@ -161,23 +161,23 @@ function ProductRow({ product, prices, pricesLoading }) {
   
   const costAnalysis = isExpandable && !pricesLoading ? calculateIngredientCost() : null
   
-  // Calculate profit per m³ for display (only for P2 items)
-  const calculateProfitPerM3Display = () => {
-    // Only show profit for P2 items
+  // Calculate crafting advantage percentage for display (only for P2 items)
+  const calculateCraftingAdvantageDisplay = () => {
+    // Only show for P2 items
     if (product.tier !== 'P2') return null
     
     const productPrices = prices[product.typeId]
     if (!productPrices || !productPrices.buy || !productPrices.sell) return null
     
-    // Use the detailed calculation from costAnalysis
-    if (costAnalysis && costAnalysis.profitPerM3Buy !== undefined) {
-      return costAnalysis.profitPerM3Buy
+    // Use the percentage gain from costAnalysis
+    if (costAnalysis && costAnalysis.percentageGain !== undefined) {
+      return costAnalysis.percentageGain
     }
     
     return null
   }
   
-  const profitPerM3 = !pricesLoading ? calculateProfitPerM3Display() : null
+  const craftingAdvantage = !pricesLoading ? calculateCraftingAdvantageDisplay() : null
   
   return (
     <>
@@ -220,9 +220,9 @@ function ProductRow({ product, prices, pricesLoading }) {
         <td className="profit-cell">
           {pricesLoading ? (
             <span className="price-loading">...</span>
-          ) : profitPerM3 !== null ? (
-            <span className={profitPerM3 > 0 ? 'profit-positive' : 'profit-negative'}>
-              {profitPerM3.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          ) : craftingAdvantage !== null ? (
+            <span className={craftingAdvantage > 0 ? 'profit-positive' : 'profit-negative'}>
+              {craftingAdvantage > 0 ? '+' : ''}{craftingAdvantage.toFixed(1)}%
             </span>
           ) : (
             <span className="price-na">N/A</span>

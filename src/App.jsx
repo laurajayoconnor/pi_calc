@@ -47,18 +47,19 @@ function App() {
 
   const { prices, loading: pricesLoading } = useMarketPrices(typeIds)
   
-  // Helper function to calculate profit per m³ for sorting (only for P2 items)
-  const calculateProfitPerM3 = (product, pricesData) => {
-    // Only calculate profit for P2 items
+  // Helper function to calculate crafting advantage percentage for sorting (only for P2 items)
+  const calculateCraftingAdvantage = (product, pricesData) => {
+    // Only calculate for P2 items
     if (product.tier !== 'P2') return -Infinity // Sort non-P2 items to the bottom
     
     if (!pricesData) return 0
     const productPrices = pricesData[product.typeId]
     if (!productPrices || !productPrices.buy || !productPrices.sell) return 0
     
-    // For P2 products, calculate with ingredients
+    // For P2 products, calculate crafting advantage
     if (product.inputs && product.inputs.length > 0) {
       let totalInputCost = 0
+      let totalInputSellValue = 0
       let hasAllPrices = true
       
       for (const inputName of product.inputs) {
@@ -69,23 +70,33 @@ function App() {
         }
         
         const inputPrices = pricesData[inputData.typeId]
-        if (!inputPrices || inputPrices.buy === null) {
+        if (!inputPrices || inputPrices.buy === null || inputPrices.sell === null) {
           hasAllPrices = false
           break
         }
         
         totalInputCost += inputPrices.buy * 40 // 40 units needed
+        totalInputSellValue += inputPrices.sell * 40
       }
       
       if (!hasAllPrices) return 0
       
+      // Calculate P1 direct trade profit
+      const p1ExportTax = totalInputSellValue * 0.03 // Using market value for simplicity
+      const p1DirectProfit = totalInputSellValue - totalInputCost - p1ExportTax
+      
+      // Calculate P2 crafting profit
       const outputValue = productPrices.sell * (product.outputPer || 1)
       const importTax = totalInputCost * 0.015
       const exportTax = outputValue * 0.03
-      const profit = outputValue - totalInputCost - importTax - exportTax
-      const totalVolume = product.volume * (product.outputPer || 1)
+      const p2CraftingProfit = outputValue - totalInputCost - importTax - exportTax
       
-      return profit / totalVolume
+      // Calculate percentage advantage
+      if (p1DirectProfit > 0) {
+        return ((p2CraftingProfit - p1DirectProfit) / p1DirectProfit) * 100
+      }
+      
+      return 0
     }
     
     return 0
@@ -96,11 +107,11 @@ function App() {
     const sorted = [...filteredProductsBase]
     
     if (sortBy === 'profitPerM3' && prices && !pricesLoading) {
-      // Sort by profit per m³ (descending)
+      // Sort by crafting advantage percentage (descending)
       sorted.sort((a, b) => {
-        const profitA = calculateProfitPerM3(a, prices)
-        const profitB = calculateProfitPerM3(b, prices)
-        return profitB - profitA
+        const advantageA = calculateCraftingAdvantage(a, prices)
+        const advantageB = calculateCraftingAdvantage(b, prices)
+        return advantageB - advantageA
       })
     } else {
       // Default tier-based sorting
