@@ -2,14 +2,13 @@ import { useState, useMemo } from 'react'
 import './App.css'
 import { piTypeIds } from './data/piTypeIds'
 import { tier0Resources, tier1Products, tier2Products, tier3Products, tier4Products } from './data/piResources'
-import IconCell from './components/IconCell'
-import InputsCell from './components/InputsCell'
-import PriceCell from './components/PriceCell'
+import ProductRow from './components/ProductRow'
 import { useMarketPrices } from './hooks/useMarketPrices'
 
 function App() {
   const [filterTier, setFilterTier] = useState('All')
   const [searchTerm, setSearchTerm] = useState('')
+  const [sortBy, setSortBy] = useState('tier') // 'tier' or 'profitPerM3'
 
   // Combine all products with their details
   const getAllProducts = () => {
@@ -32,6 +31,48 @@ function App() {
 
   const products = getAllProducts()
   
+  // Helper function to calculate profit per m³ for sorting
+  const calculateProfitPerM3 = (product) => {
+    const productPrices = prices[product.typeId]
+    if (!productPrices || !productPrices.buy || !productPrices.sell) return 0
+    
+    // For P2 products, calculate with ingredients
+    if (product.tier === 'P2' && product.inputs && product.inputs.length > 0) {
+      let totalInputCost = 0
+      let hasAllPrices = true
+      
+      for (const inputName of product.inputs) {
+        const inputData = piTypeIds[inputName]
+        if (!inputData) {
+          hasAllPrices = false
+          break
+        }
+        
+        const inputPrices = prices[inputData.typeId]
+        if (!inputPrices || inputPrices.buy === null) {
+          hasAllPrices = false
+          break
+        }
+        
+        totalInputCost += inputPrices.buy * 40 // 40 units needed
+      }
+      
+      if (!hasAllPrices) return 0
+      
+      const outputValue = productPrices.sell * (product.outputPer || 1)
+      const importTax = totalInputCost * 0.015
+      const exportTax = outputValue * 0.03
+      const profit = outputValue - totalInputCost - importTax - exportTax
+      const totalVolume = product.volume * (product.outputPer || 1)
+      
+      return profit / totalVolume
+    }
+    
+    // For other tiers, simple calculation
+    const profit = productPrices.sell - productPrices.buy
+    return profit / product.volume
+  }
+
   // Filter and sort products
   const filteredProducts = products
     .filter(product => {
@@ -40,13 +81,20 @@ function App() {
       return matchesTier && matchesSearch
     })
     .sort((a, b) => {
-      // First sort by tier (P0, P1, P2, P3, P4)
-      const tierOrder = ['P0', 'P1', 'P2', 'P3', 'P4']
-      const tierDiff = tierOrder.indexOf(a.tier) - tierOrder.indexOf(b.tier)
-      if (tierDiff !== 0) return tierDiff
-      
-      // Then sort alphabetically within each tier
-      return a.name.localeCompare(b.name)
+      if (sortBy === 'profitPerM3') {
+        // Sort by profit per m³ (descending)
+        const profitA = calculateProfitPerM3(a)
+        const profitB = calculateProfitPerM3(b)
+        return profitB - profitA
+      } else {
+        // Default tier-based sorting
+        const tierOrder = ['P0', 'P1', 'P2', 'P3', 'P4']
+        const tierDiff = tierOrder.indexOf(a.tier) - tierOrder.indexOf(b.tier)
+        if (tierDiff !== 0) return tierDiff
+        
+        // Then sort alphabetically within each tier
+        return a.name.localeCompare(b.name)
+      }
     })
 
   // Get all unique type IDs for price fetching
@@ -106,6 +154,21 @@ function App() {
                 P4
               </button>
             </div>
+            <div className="sort-controls">
+              <label>Sort by:</label>
+              <button 
+                className={sortBy === 'tier' ? 'active' : ''} 
+                onClick={() => setSortBy('tier')}
+              >
+                Tier
+              </button>
+              <button 
+                className={sortBy === 'profitPerM3' ? 'active' : ''} 
+                onClick={() => setSortBy('profitPerM3')}
+              >
+                Profit/m³
+              </button>
+            </div>
           </div>
         </section>
 
@@ -122,39 +185,17 @@ function App() {
                 <th>Output/Cycle</th>
                 <th>Buy (Syndicate)</th>
                 <th>Sell (Jita)</th>
+                <th>Profit/m³</th>
               </tr>
             </thead>
             <tbody>
               {filteredProducts.map(product => (
-                <tr key={product.typeId}>
-                  <IconCell 
-                    typeId={product.typeId} 
-                    name={product.name} 
-                    fallbackIcon={product.icon} 
-                  />
-                  <td className="name-cell">{product.name}</td>
-                  <td className="typeid-cell">{product.typeId}</td>
-                  <td className={`tier-cell tier-${product.tier.toLowerCase()}`}>
-                    {product.tier}
-                  </td>
-                  <td className="volume-cell">{product.volume}</td>
-                  <InputsCell inputs={product.inputs} />
-                  <td className="output-cell">{product.outputPer || '-'}</td>
-                  <td className="price-cell">
-                    {pricesLoading ? (
-                      <span className="price-loading">...</span>
-                    ) : (
-                      <PriceCell price={prices[product.typeId]?.buy} type="buy" />
-                    )}
-                  </td>
-                  <td className="price-cell">
-                    {pricesLoading ? (
-                      <span className="price-loading">...</span>
-                    ) : (
-                      <PriceCell price={prices[product.typeId]?.sell} type="sell" />
-                    )}
-                  </td>
-                </tr>
+                <ProductRow 
+                  key={product.typeId}
+                  product={product}
+                  prices={prices}
+                  pricesLoading={pricesLoading}
+                />
               ))}
             </tbody>
           </table>
