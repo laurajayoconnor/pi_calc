@@ -77,7 +77,7 @@ export const piTypeIds = {
   'Industrial Explosives': { typeId: 2360, tier: 'P3', volume: 3.0, icon: '💥' },
   'Neocoms': { typeId: 2354, tier: 'P3', volume: 3.0, icon: '💻' },
   'Nuclear Reactors': { typeId: 2352, tier: 'P3', volume: 3.0, icon: '☢️' },
-  'Planetary Vehicles': { typeId: 9834, tier: 'P3', volume: 3.0, icon: '🚗' },
+  'Planetary Vehicles': { typeId: 9846, tier: 'P3', volume: 3.0, icon: '🚗' },
   'Robotics': { typeId: 9848, tier: 'P3', volume: 3.0, icon: '🤖' },
   'Smartfab Units': { typeId: 2351, tier: 'P3', volume: 3.0, icon: '🏭' },
   'Supercomputers': { typeId: 2349, tier: 'P3', volume: 3.0, icon: '🖥️' },
