@@ -1,0 +1,272 @@
+.app {
+  min-height: 100vh;
+  background: #0a0a0a;
+  color: #e0e0e0;
+}
+
+.app-header {
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+  padding: 2rem;
+  text-align: center;
+  border-bottom: 2px solid #ff6b35;
+}
+
+.app-header h1 {
+  margin: 0;
+  font-size: 2.5rem;
+  color: #ff6b35;
+  text-shadow: 0 0 20px rgba(255, 107, 53, 0.5);
+}
+
+.app-header p {
+  margin: 0.5rem 0 0;
+  color: #a0a0a0;
+  font-size: 1.1rem;
+}
+
+.app-main {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+.controls {
+  background: #1a1a2e;
+  border: 1px solid #2a2a3e;
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.filter-controls {
+  display: flex;
+  gap: 2rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.search-box {
+  flex: 1;
+  min-width: 250px;
+}
+
+.search-box input {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  background: #16213e;
+  border: 2px solid #2a3f5f;
+  border-radius: 6px;
+  color: #e0e0e0;
+  font-size: 1rem;
+  transition: border-color 0.3s ease;
+}
+
+.search-box input:focus {
+  outline: none;
+  border-color: #ff6b35;
+}
+
+.search-box input::placeholder {
+  color: #6a6a7a;
+}
+
+.tier-filters {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.tier-filters button {
+  background: #16213e;
+  border: 2px solid #2a3f5f;
+  color: #e0e0e0;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: all 0.3s ease;
+}
+
+.tier-filters button:hover {
+  background: #1e2a4a;
+  border-color: #3a4f6f;
+}
+
+.tier-filters button.active {
+  background: #ff6b35;
+  border-color: #ff6b35;
+  color: #0a0a0a;
+  font-weight: 600;
+}
+
+.materials-table-section {
+  background: #1a1a2e;
+  border: 1px solid #2a2a3e;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.materials-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.materials-table thead {
+  background: #16213e;
+}
+
+.materials-table th {
+  padding: 1rem;
+  text-align: left;
+  font-weight: 600;
+  color: #ff6b35;
+  border-bottom: 2px solid #ff6b35;
+}
+
+.materials-table tbody tr {
+  transition: background-color 0.2s ease;
+  border-bottom: 1px solid #2a2a3e;
+}
+
+.materials-table tbody tr:hover {
+  background: #1e2a4a;
+}
+
+.materials-table td {
+  padding: 0.75rem 1rem;
+}
+
+.icon-cell {
+  text-align: center;
+  width: 80px;
+  padding: 0.5rem;
+}
+
+.icon-wrapper {
+  position: relative;
+  width: 48px;
+  height: 48px;
+  margin: 0 auto;
+}
+
+.icon-loading {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 1.5rem;
+  opacity: 0.5;
+}
+
+.eve-icon {
+  width: 48px;
+  height: 48px;
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: crisp-edges;
+  border-radius: 4px;
+  transition: transform 0.2s ease;
+}
+
+.eve-icon:hover {
+  transform: scale(1.1);
+}
+
+.fallback-icon {
+  font-size: 2rem;
+  display: inline-block;
+}
+
+.name-cell {
+  font-weight: 500;
+  color: #e0e0e0;
+}
+
+.typeid-cell {
+  font-family: monospace;
+  color: #a0a0a0;
+}
+
+.tier-cell {
+  font-weight: 600;
+  text-align: center;
+  padding: 0.25rem 0.75rem;
+  border-radius: 4px;
+  width: 60px;
+}
+
+.tier-p0 {
+  background: #4a4a4a;
+  color: #d0d0d0;
+}
+
+.tier-p1 {
+  background: #2d5016;
+  color: #8bc34a;
+}
+
+.tier-p2 {
+  background: #1a4d8f;
+  color: #4da6ff;
+}
+
+.tier-p3 {
+  background: #5d2c86;
+  color: #b380ff;
+}
+
+.tier-p4 {
+  background: #8f4d1a;
+  color: #ff9933;
+}
+
+.volume-cell {
+  text-align: right;
+  font-family: monospace;
+}
+
+.inputs-cell {
+  max-width: 300px;
+  padding: 0.5rem 1rem;
+}
+
+.inputs-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.input-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.input-icon {
+  width: 24px;
+  height: 24px;
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: crisp-edges;
+  border-radius: 2px;
+}
+
+.input-icon-fallback {
+  font-size: 1rem;
+  width: 24px;
+  text-align: center;
+}
+
+.input-name {
+  font-size: 0.85rem;
+  color: #a0a0a0;
+}
+
+.output-cell {
+  text-align: center;
+  font-family: monospace;
+}
+
+.no-results {
+  padding: 3rem;
+  text-align: center;
+  color: #6a6a7a;
+  font-size: 1.1rem;
+}
