@@ -107,14 +107,8 @@ function ProductRow({ product, prices, pricesLoading }) {
     const p1BuyCost = totalBuyCost // Cost to buy P1 in Syndicate
     const p1SellValue = totalSellCost // Revenue from selling P1 at Jita
     
-    // P1 direct trade only pays export tax at Jita (no import/export at planet)
-    let p1DirectExportTax = 0
-    ingredientDetails.forEach(ingredient => {
-      const baseValue = piTaxValues[ingredient.name] || 0
-      p1DirectExportTax += baseValue * ingredient.unitsNeeded * exportTaxRate
-    })
-    
-    const p1DirectProfit = p1SellValue - p1BuyCost - p1DirectExportTax
+    // P1 direct trade has NO taxes - just market trading, no planetary interaction
+    const p1DirectProfit = p1SellValue - p1BuyCost
     const p1DirectProfitPerM3 = p1DirectProfit / totalP1Volume
     
     // Option 2: Buy P1 in Syndicate, craft P2, sell P2 at Jita (already calculated above)
@@ -149,7 +143,6 @@ function ProductRow({ product, prices, pricesLoading }) {
       profitPerM3Sell,
       p1BuyCost,
       p1SellValue,
-      p1DirectExportTax,
       p1DirectProfit,
       p1DirectProfitPerM3,
       totalP1Volume,
@@ -379,7 +372,7 @@ function ProductRow({ product, prices, pricesLoading }) {
                     <td>{costAnalysis.totalP1Volume.toFixed(2)} m³</td>
                     <td className="price-sell">{costAnalysis.p1SellValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ISK</td>
                     <td className="price-buy">{costAnalysis.p1BuyCost.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ISK</td>
-                    <td className="tax-value">{costAnalysis.p1DirectExportTax.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ISK</td>
+                    <td className="tax-value">0 ISK</td>
                     <td className={costAnalysis.p1DirectProfit > 0 ? 'profit-positive' : 'profit-negative'}>
                       {costAnalysis.p1DirectProfit.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ISK
                     </td>

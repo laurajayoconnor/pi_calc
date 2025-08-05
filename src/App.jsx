@@ -81,9 +81,8 @@ function App() {
       
       if (!hasAllPrices) return 0
       
-      // Calculate P1 direct trade profit
-      const p1ExportTax = totalInputSellValue * 0.03 // Using market value for simplicity
-      const p1DirectProfit = totalInputSellValue - totalInputCost - p1ExportTax
+      // Calculate P1 direct trade profit (no taxes - just market trading)
+      const p1DirectProfit = totalInputSellValue - totalInputCost
       
       // Calculate P2 crafting profit
       const outputValue = productPrices.sell * (product.outputPer || 1)
