@@ -64,7 +64,7 @@ export const piTypeIds = {
   'Water-Cooled CPU': { typeId: 2328, tier: 'P2', volume: 0.75, icon: '💻' },
 
   // P3 - Specialized Products (3.0 m³)
-  'Biotech Research Reports': { typeId: 2851, tier: 'P3', volume: 3.0, icon: '📊' },
+  'Biotech Research Reports': { typeId: 2358, tier: 'P3', volume: 3.0, icon: '📊' },
   'Camera Drones': { typeId: 2345, tier: 'P3', volume: 3.0, icon: '📷' },
   'Condensates': { typeId: 2344, tier: 'P3', volume: 3.0, icon: '💧' },
   'Cryoprotectant Solution': { typeId: 2367, tier: 'P3', volume: 3.0, icon: '🧊' },

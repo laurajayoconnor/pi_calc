@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react'
 import './App.css'
 import { piTypeIds } from './data/piTypeIds'
+import { piTaxValues } from './data/piTaxValues'
 import { tier0Resources, tier1Products, tier2Products, tier3Products, tier4Products } from './data/piResources'
 import ProductRow from './components/ProductRow'
 import { useMarketPrices } from './hooks/useMarketPrices'
@@ -40,27 +41,47 @@ function App() {
     })
   }, [filterTier, searchTerm])
 
-  // Get all unique type IDs for price fetching
+  // Get all unique type IDs for price fetching (including inputs)
   const typeIds = useMemo(() => {
-    return filteredProductsBase.map(p => p.typeId)
+    const ids = new Set()
+    
+    // Add all filtered product type IDs
+    filteredProductsBase.forEach(product => {
+      ids.add(product.typeId)
+      
+      // Also add all input type IDs for cost calculations
+      if (product.inputs && product.inputs.length > 0) {
+        product.inputs.forEach(inputName => {
+          const inputData = piTypeIds[inputName]
+          if (inputData) {
+            ids.add(inputData.typeId)
+          }
+        })
+      }
+    })
+    
+    return Array.from(ids)
   }, [filteredProductsBase])
 
   const { prices, loading: pricesLoading } = useMarketPrices(typeIds)
   
-  // Helper function to calculate crafting advantage percentage for sorting (only for P2 items)
+  // Helper function to calculate crafting advantage percentage for sorting (for P2 and P3 items)
   const calculateCraftingAdvantage = (product, pricesData) => {
-    // Only calculate for P2 items
-    if (product.tier !== 'P2') return -Infinity // Sort non-P2 items to the bottom
+    // Only calculate for P2 and P3 items
+    if (product.tier !== 'P2' && product.tier !== 'P3') return -Infinity // Sort non-P2/P3 items to the bottom
     
     if (!pricesData) return 0
     const productPrices = pricesData[product.typeId]
     if (!productPrices || !productPrices.buy || !productPrices.sell) return 0
     
-    // For P2 products, calculate crafting advantage
+    // For P2/P3 products, calculate crafting advantage
     if (product.inputs && product.inputs.length > 0) {
       let totalInputCost = 0
       let totalInputSellValue = 0
       let hasAllPrices = true
+      
+      const unitsNeeded = product.tier === 'P2' ? 40 : 10 // P2 needs 40 P1, P3 needs 10 P2
+      const outputUnits = product.tier === 'P2' ? 5 : 3 // P2 produces 5, P3 produces 3
       
       for (const inputName of product.inputs) {
         const inputData = piTypeIds[inputName]
@@ -75,24 +96,47 @@ function App() {
           break
         }
         
-        totalInputCost += inputPrices.buy * 40 // 40 units needed
-        totalInputSellValue += inputPrices.sell * 40
+        totalInputCost += inputPrices.buy * unitsNeeded
+        totalInputSellValue += inputPrices.sell * unitsNeeded
       }
       
       if (!hasAllPrices) return 0
       
-      // Calculate P1 direct trade profit (no taxes - just market trading)
-      const p1DirectProfit = totalInputSellValue - totalInputCost
+      // Calculate direct trade profit (no taxes - just market trading)
+      const directProfit = totalInputSellValue - totalInputCost
       
-      // Calculate P2 crafting profit
-      const outputValue = productPrices.sell * (product.outputPer || 1)
-      const importTax = totalInputCost * 0.015
-      const exportTax = outputValue * 0.03
-      const p2CraftingProfit = outputValue - totalInputCost - importTax - exportTax
+      // Calculate crafting profit with taxes
+      const outputValue = productPrices.sell * outputUnits
+      
+      // For tax calculation, we use base values from piTaxValues
+      let inputImportTax = 0
+      let inputExportTax = 0
+      
+      if (product.tier === 'P2') {
+        // P2 production: P1 materials only pay import tax
+        for (const inputName of product.inputs) {
+          const baseValue = piTaxValues[inputName] || 0
+          inputImportTax += baseValue * unitsNeeded * 0.015
+        }
+      } else if (product.tier === 'P3') {
+        // P3 production: P2 materials pay both import and export tax
+        for (const inputName of product.inputs) {
+          const baseValue = piTaxValues[inputName] || 0
+          inputImportTax += baseValue * unitsNeeded * 0.015
+          inputExportTax += baseValue * unitsNeeded * 0.03
+        }
+      }
+      
+      // Output export tax
+      const outputBaseValue = piTaxValues[product.name] || 0
+      const outputExportTax = outputBaseValue * outputUnits * 0.03
+      
+      const totalTaxes = inputImportTax + inputExportTax + outputExportTax
+      const craftingProfit = outputValue - totalInputCost - totalTaxes
       
       // Calculate percentage advantage
-      if (p1DirectProfit > 0) {
-        return ((p2CraftingProfit - p1DirectProfit) / p1DirectProfit) * 100
+      if (directProfit > 0) {
+        return ((craftingProfit - directProfit) / directProfit) * 100
       }
       
       return 0

@@ -8,8 +8,8 @@ import { piTaxValues } from '../data/piTaxValues'
 function ProductRow({ product, prices, pricesLoading }) {
   const [isExpanded, setIsExpanded] = useState(false)
   
-  // Only allow expansion for P2 items
-  const isExpandable = product.tier === 'P2'
+  // Allow expansion for P2 and P3 items
+  const isExpandable = product.tier === 'P2' || product.tier === 'P3'
   
   // Calculate ingredient costs
   const calculateIngredientCost = () => {
@@ -18,6 +18,10 @@ function ProductRow({ product, prices, pricesLoading }) {
     let totalBuyCost = 0
     let totalSellCost = 0
     let hasAllPrices = true
+    
+    // Determine units needed based on product tier
+    const unitsNeededPerInput = product.tier === 'P2' ? 40 : 10 // P3 needs 10 units of each P2
+    const outputUnits = product.tier === 'P2' ? 5 : 3 // P2 produces 5, P3 produces 3
     
     const ingredientDetails = product.inputs.map(inputName => {
       const inputData = piTypeIds[inputName]
@@ -32,8 +36,7 @@ function ProductRow({ product, prices, pricesLoading }) {
         return null
       }
       
-      // For P2 products, we need 40 units of each P1 input (2 batches of 20)
-      const unitsNeeded = 40
+      const unitsNeeded = unitsNeededPerInput
       const buyCost = inputPrices.buy * unitsNeeded
       const sellCost = inputPrices.sell * unitsNeeded
       
@@ -43,6 +46,7 @@ function ProductRow({ product, prices, pricesLoading }) {
       return {
         name: inputName,
         typeId: inputData.typeId,
+        tier: inputData.tier,
         unitsNeeded,
         buyPrice: inputPrices.buy,
         sellPrice: inputPrices.sell,
@@ -56,8 +60,6 @@ function ProductRow({ product, prices, pricesLoading }) {
     const productPrices = prices[product.typeId]
     if (!productPrices || productPrices.sell === null) return null
     
-    // P2 products produce 5 units per cycle
-    const outputUnits = 5
     const outputValue = productPrices.sell * outputUnits
     
     // POCO tax rates - default 3% which splits as:
@@ -65,19 +67,30 @@ function ProductRow({ product, prices, pricesLoading }) {
     const exportTaxRate = 0.03  // 3% for exports (full rate)
     
     // Calculate taxes for production using base values
-    // P1 materials: only import tax when bringing to planet
-    let p1ImportTax = 0
-    ingredientDetails.forEach(ingredient => {
-      const baseValue = piTaxValues[ingredient.name] || 0
-      p1ImportTax += baseValue * ingredient.unitsNeeded * importTaxRate
-    })
+    let inputImportTax = 0
+    let inputExportTax = 0
     
-    // P2 product: only export tax when shipping from planet
-    const p2BaseValue = piTaxValues[product.name] || 0
-    const p2ExportTax = p2BaseValue * outputUnits * exportTaxRate
+    if (product.tier === 'P2') {
+      // P2 production: P1 materials only pay import tax
+      ingredientDetails.forEach(ingredient => {
+        const baseValue = piTaxValues[ingredient.name] || 0
+        inputImportTax += baseValue * ingredient.unitsNeeded * importTaxRate
+      })
+    } else if (product.tier === 'P3') {
+      // P3 production: P2 materials pay both import and export tax
+      ingredientDetails.forEach(ingredient => {
+        const baseValue = piTaxValues[ingredient.name] || 0
+        inputImportTax += baseValue * ingredient.unitsNeeded * importTaxRate
+        inputExportTax += baseValue * ingredient.unitsNeeded * exportTaxRate
+      })
+    }
     
-    // Total production taxes (P1 import + P2 export)
-    const totalProductionTaxes = p1ImportTax + p2ExportTax
+    // Output product: only export tax when shipping from planet
+    const outputBaseValue = piTaxValues[product.name] || 0
+    const outputExportTax = outputBaseValue * outputUnits * exportTaxRate
+    
+    // Total production taxes
+    const totalProductionTaxes = inputImportTax + inputExportTax + outputExportTax
     
     // Total costs including production taxes
     const totalCostWithTaxBuy = totalBuyCost + totalProductionTaxes
@@ -94,30 +107,35 @@ function ProductRow({ product, prices, pricesLoading }) {
     const profitMarginWithTaxSell = ((profitWithTaxSell / outputValue) * 100).toFixed(1)
     
     // Calculate profit per m³
-    // P2 products are 0.75 m³ each, producing 5 units = 3.75 m³ total
     const totalOutputVolume = product.volume * outputUnits
     const profitPerM3Buy = profitWithTaxBuy / totalOutputVolume
     const profitPerM3Sell = profitWithTaxSell / totalOutputVolume
     
-    // Calculate direct P1 trade profit (Buy in Syndicate, Sell at Jita)
-    // Total P1 volume: 40 units * number of ingredients * 0.19 m³
-    const totalP1Volume = 40 * product.inputs.length * 0.19
+    // Calculate volumes for comparison
+    let directTradeVolume = 0
+    if (product.tier === 'P2') {
+      // P1 volume: 40 units * number of ingredients * 0.19 m³
+      directTradeVolume = 40 * product.inputs.length * 0.19
+    } else if (product.tier === 'P3') {
+      // P2 volume: 10 units * number of ingredients * 0.75 m³
+      directTradeVolume = 10 * product.inputs.length * 0.75
+    }
     
-    // Option 1: Buy P1 in Syndicate, transport to Jita, sell
-    const p1BuyCost = totalBuyCost // Cost to buy P1 in Syndicate
-    const p1SellValue = totalSellCost // Revenue from selling P1 at Jita
+    // Option 1: Buy inputs in Syndicate, transport to Jita, sell
+    const directTradeBuyCost = totalBuyCost
+    const directTradeSellValue = totalSellCost
     
-    // P1 direct trade has NO taxes - just market trading, no planetary interaction
-    const p1DirectProfit = p1SellValue - p1BuyCost
-    const p1DirectProfitPerM3 = p1DirectProfit / totalP1Volume
+    // Direct trade has NO taxes - just market trading, no planetary interaction
+    const directTradeProfit = directTradeSellValue - directTradeBuyCost
+    const directTradeProfitPerM3 = directTradeProfit / directTradeVolume
     
-    // Option 2: Buy P1 in Syndicate, craft P2, sell P2 at Jita (already calculated above)
+    // Option 2: Buy inputs in Syndicate, craft product, sell at Jita (already calculated above)
     // profitWithTaxBuy is the profit from this option
     
-    // Comparison: Additional profit from crafting P2 vs direct P1 trade
-    const additionalProfitFromCrafting = profitWithTaxBuy - p1DirectProfit
-    const additionalProfitPerM3 = profitPerM3Buy - p1DirectProfitPerM3
-    const percentageGain = p1DirectProfit > 0 ? ((additionalProfitFromCrafting / p1DirectProfit) * 100) : 0
+    // Comparison: Additional profit from crafting vs direct trade
+    const additionalProfitFromCrafting = profitWithTaxBuy - directTradeProfit
+    const additionalProfitPerM3 = profitPerM3Buy - directTradeProfitPerM3
+    const percentageGain = directTradeProfit > 0 ? ((additionalProfitFromCrafting / directTradeProfit) * 100) : 0
     
     return {
       ingredientDetails,
@@ -129,8 +147,9 @@ function ProductRow({ product, prices, pricesLoading }) {
       profitFromSell,
       profitMarginBuy,
       profitMarginSell,
-      p1ImportTax,
-      p2ExportTax,
+      inputImportTax,
+      inputExportTax,
+      outputExportTax,
       totalProductionTaxes,
       totalCostWithTaxBuy,
       totalCostWithTaxSell,
@@ -141,11 +160,11 @@ function ProductRow({ product, prices, pricesLoading }) {
       totalOutputVolume,
       profitPerM3Buy,
       profitPerM3Sell,
-      p1BuyCost,
-      p1SellValue,
-      p1DirectProfit,
-      p1DirectProfitPerM3,
-      totalP1Volume,
+      directTradeBuyCost,
+      directTradeSellValue,
+      directTradeProfit,
+      directTradeProfitPerM3,
+      directTradeVolume,
       additionalProfitFromCrafting,
       additionalProfitPerM3,
       percentageGain
@@ -154,10 +173,10 @@ function ProductRow({ product, prices, pricesLoading }) {
   
   const costAnalysis = isExpandable && !pricesLoading ? calculateIngredientCost() : null
   
-  // Calculate crafting advantage percentage for display (only for P2 items)
+  // Calculate crafting advantage percentage for display (for P2 and P3 items)
   const calculateCraftingAdvantageDisplay = () => {
-    // Only show for P2 items
-    if (product.tier !== 'P2') return null
+    // Only show for P2 and P3 items
+    if (product.tier !== 'P2' && product.tier !== 'P3') return null
     
     const productPrices = prices[product.typeId]
     if (!productPrices || !productPrices.buy || !productPrices.sell) return null
@@ -266,7 +285,7 @@ function ProductRow({ product, prices, pricesLoading }) {
                         </td>
                         <td className="type-cell">Input</td>
                         <td className="quantity-cell">{ingredient.unitsNeeded}</td>
-                        <td className="volume-cell">{(ingredient.unitsNeeded * 0.19).toFixed(2)} m³</td>
+                        <td className="volume-cell">{(ingredient.unitsNeeded * (product.tier === 'P2' ? 0.19 : 0.75)).toFixed(2)} m³</td>
                         <td className="price-buy">{ingredient.totalBuyCost.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ISK</td>
                         <td className="price-sell">{ingredient.totalSellCost.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ISK</td>
                         <td>-</td>
@@ -316,24 +335,37 @@ function ProductRow({ product, prices, pricesLoading }) {
                     <td colSpan="7" style={{ textAlign: 'center', fontWeight: 'bold', color: '#ff6b35' }}>Production Costs & Taxes</td>
                   </tr>
                   
-                  {/* P1 Import Tax */}
+                  {/* Input Import Tax */}
                   <tr className="tax-row">
-                    <td colSpan="4" className="tax-label">P1 Import Tax (1.5% on base value)</td>
-                    <td colSpan="2" className="tax-value">-{costAnalysis.p1ImportTax.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ISK</td>
+                    <td colSpan="4" className="tax-label">
+                      {product.tier === 'P2' ? 'P1' : 'P2'} Import Tax (1.5% on base value)
+                    </td>
+                    <td colSpan="2" className="tax-value">-{costAnalysis.inputImportTax.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ISK</td>
                     <td>-</td>
                   </tr>
                   
-                  {/* P2 Export tax */}
+                  {/* Input Export Tax (only for P3) */}
+                  {product.tier === 'P3' && (
+                    <tr className="tax-row">
+                      <td colSpan="4" className="tax-label">P2 Export Tax (3% on base value)</td>
+                      <td colSpan="2" className="tax-value">-{costAnalysis.inputExportTax.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ISK</td>
+                      <td>-</td>
+                    </tr>
+                  )}
+                  
+                  {/* Output Export tax */}
                   <tr className="tax-row">
-                    <td colSpan="4" className="tax-label">P2 Export Tax (3% on base value)</td>
-                    <td colSpan="2" className="tax-value">-{costAnalysis.p2ExportTax.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ISK</td>
+                    <td colSpan="4" className="tax-label">
+                      {product.tier} Export Tax (3% on base value)
+                    </td>
+                    <td colSpan="2" className="tax-value">-{costAnalysis.outputExportTax.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ISK</td>
                     <td>-</td>
                   </tr>
                   
                   {/* Total Tax row */}
                   <tr className="subtotal-row">
                     <td colSpan="4" className="subtotal-label">Total Taxes</td>
-                    <td colSpan="2" className="tax-value">-{(costAnalysis.p1ImportTax + costAnalysis.p2ExportTax).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ISK</td>
+                    <td colSpan="2" className="tax-value">-{costAnalysis.totalProductionTaxes.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ISK</td>
                     <td>-</td>
                   </tr>
                   
@@ -353,7 +385,7 @@ function ProductRow({ product, prices, pricesLoading }) {
                 </tbody>
               </table>
               
-              <h5 className="comparison-header">P1 Direct Trade vs P2 Crafting:</h5>
+              <h5 className="comparison-header">{product.tier === 'P2' ? 'P1' : 'P2'} Direct Trade vs {product.tier} Crafting:</h5>
               <table className="comparison-table">
                 <thead>
                   <tr>
@@ -368,20 +400,20 @@ function ProductRow({ product, prices, pricesLoading }) {
                 </thead>
                 <tbody>
                   <tr className="p1-trade-row">
-                    <td>P1 Direct Trade</td>
-                    <td>{costAnalysis.totalP1Volume.toFixed(2)} m³</td>
-                    <td className="price-sell">{costAnalysis.p1SellValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ISK</td>
-                    <td className="price-buy">{costAnalysis.p1BuyCost.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ISK</td>
+                    <td>{product.tier === 'P2' ? 'P1' : 'P2'} Direct Trade</td>
+                    <td>{costAnalysis.directTradeVolume.toFixed(2)} m³</td>
+                    <td className="price-sell">{costAnalysis.directTradeSellValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ISK</td>
+                    <td className="price-buy">{costAnalysis.directTradeBuyCost.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ISK</td>
                     <td className="tax-value">0 ISK</td>
-                    <td className={costAnalysis.p1DirectProfit > 0 ? 'profit-positive' : 'profit-negative'}>
-                      {costAnalysis.p1DirectProfit.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ISK
+                    <td className={costAnalysis.directTradeProfit > 0 ? 'profit-positive' : 'profit-negative'}>
+                      {costAnalysis.directTradeProfit.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ISK
                     </td>
-                    <td className={costAnalysis.p1DirectProfitPerM3 > 0 ? 'profit-positive' : 'profit-negative'}>
-                      {costAnalysis.p1DirectProfitPerM3.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ISK/m³
+                    <td className={costAnalysis.directTradeProfitPerM3 > 0 ? 'profit-positive' : 'profit-negative'}>
+                      {costAnalysis.directTradeProfitPerM3.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ISK/m³
                     </td>
                   </tr>
                   <tr className="p2-craft-row">
-                    <td>P2 Crafting</td>
+                    <td>{product.tier} Crafting</td>
                     <td>{costAnalysis.totalOutputVolume.toFixed(2)} m³</td>
                     <td className="price-sell">{costAnalysis.outputValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ISK</td>
                     <td className="price-buy">{costAnalysis.totalBuyCost.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ISK</td>
