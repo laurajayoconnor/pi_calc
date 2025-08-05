@@ -60,28 +60,28 @@ function ProductRow({ product, prices, pricesLoading }) {
     const outputUnits = 5
     const outputValue = productPrices.sell * outputUnits
     
-    // POCO tax rates - default 10% which splits as:
-    const importTaxRate = 0.05 // 5% for imports (half of base 10%)
-    const exportTaxRate = 0.10  // 10% for exports (full rate)
+    // POCO tax rates - default 3% which splits as:
+    const importTaxRate = 0.015 // 1.5% for imports (half of base 3%)
+    const exportTaxRate = 0.03  // 3% for exports (full rate)
     
-    // Calculate import AND export taxes for P1 materials using base values
-    // P1 materials are both imported AND exported from/to the POCO
-    let totalP1ImportExportTax = 0
+    // Calculate taxes for P1 materials using base values
+    let p1ImportTax = 0
+    let p1ExportTax = 0
     ingredientDetails.forEach(ingredient => {
       const baseValue = piTaxValues[ingredient.name] || 0
-      const importTax = baseValue * ingredient.unitsNeeded * importTaxRate
-      const exportTax = baseValue * ingredient.unitsNeeded * exportTaxRate
-      totalP1ImportExportTax += importTax + exportTax
+      p1ImportTax += baseValue * ingredient.unitsNeeded * importTaxRate
+      p1ExportTax += baseValue * ingredient.unitsNeeded * exportTaxRate
     })
     
-    // Calculate import AND export tax for P2 product using base value
+    // Calculate taxes for P2 product using base value
     const p2BaseValue = piTaxValues[product.name] || 0
     const p2ImportTax = p2BaseValue * outputUnits * importTaxRate
     const p2ExportTax = p2BaseValue * outputUnits * exportTaxRate
-    const totalP2Tax = p2ImportTax + p2ExportTax
     
-    // Total costs including all taxes
-    const totalTaxes = totalP1ImportExportTax + totalP2Tax
+    // Total taxes (all import/export taxes)
+    const totalTaxes = p1ImportTax + p1ExportTax + p2ImportTax + p2ExportTax
+    
+    // Total costs including appropriate taxes
     const totalCostWithTaxBuy = totalBuyCost + totalTaxes
     const totalCostWithTaxSell = totalSellCost + totalTaxes
     
@@ -137,10 +137,10 @@ function ProductRow({ product, prices, pricesLoading }) {
       profitFromSell,
       profitMarginBuy,
       profitMarginSell,
-      totalP1ImportExportTax,
+      p1ImportTax,
+      p1ExportTax,
       p2ImportTax,
       p2ExportTax,
-      totalP2Tax,
       totalTaxes,
       totalCostWithTaxBuy,
       totalCostWithTaxSell,
@@ -293,10 +293,32 @@ function ProductRow({ product, prices, pricesLoading }) {
                     <td>-</td>
                   </tr>
                   
-                  {/* P1 Tax row */}
+                  {/* P1 Import Tax row */}
                   <tr className="tax-row">
-                    <td colSpan="4" className="tax-label">P1 Import/Export Tax (5%/10%)</td>
-                    <td colSpan="2" className="tax-value">-{costAnalysis.totalP1ImportExportTax.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ISK</td>
+                    <td colSpan="4" className="tax-label">P1 Import Tax (1.5%)</td>
+                    <td colSpan="2" className="tax-value">-{costAnalysis.p1ImportTax.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ISK</td>
+                    <td>-</td>
+                  </tr>
+                  
+                  {/* P1 Export Tax row */}
+                  <tr className="tax-row">
+                    <td colSpan="4" className="tax-label">P1 Export Tax (3%)</td>
+                    <td colSpan="2" className="tax-value">-{costAnalysis.p1ExportTax.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ISK</td>
+                    <td>-</td>
+                  </tr>
+                  
+                  {/* Input total with taxes */}
+                  <tr className="subtotal-row">
+                    <td colSpan="4" className="subtotal-label">Total Input Cost (with P1 taxes)</td>
+                    <td className="price-buy">{(costAnalysis.totalBuyCost + costAnalysis.p1ImportTax + costAnalysis.p1ExportTax).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ISK</td>
+                    <td className="price-sell">{(costAnalysis.totalSellCost + costAnalysis.p1ImportTax + costAnalysis.p1ExportTax).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ISK</td>
+                    <td>-</td>
+                  </tr>
+                  
+                  {/* P2 Import Tax row */}
+                  <tr className="tax-row">
+                    <td colSpan="4" className="tax-label">P2 Import Tax (1.5%)</td>
+                    <td colSpan="2" className="tax-value">-{costAnalysis.p2ImportTax.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ISK</td>
                     <td>-</td>
                   </tr>
                   
@@ -329,10 +351,10 @@ function ProductRow({ product, prices, pricesLoading }) {
                     </td>
                   </tr>
                   
-                  {/* P2 tax */}
+                  {/* P2 Export tax */}
                   <tr className="tax-row">
-                    <td colSpan="4" className="tax-label">P2 Import/Export Tax (5%/10%)</td>
-                    <td colSpan="2" className="tax-value">-{costAnalysis.totalP2Tax.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ISK</td>
+                    <td colSpan="4" className="tax-label">P2 Export Tax (3%)</td>
+                    <td colSpan="2" className="tax-value">-{costAnalysis.p2ExportTax.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ISK</td>
                     <td>-</td>
                   </tr>
                   
