@@ -198,7 +198,7 @@ function App() {
                 <th>Output/Cycle</th>
                 <th>Buy (Syndicate)</th>
                 <th>Sell (Jita)</th>
-                <th>Profit/m³ (P2)</th>
+                <th>Profit Crafting Advantage</th>
               </tr>
             </thead>
             <tbody>
