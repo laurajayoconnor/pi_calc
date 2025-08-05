@@ -270,3 +270,42 @@
   color: #6a6a7a;
   font-size: 1.1rem;
 }
+
+.price-cell, .profit-cell {
+  text-align: right;
+  font-family: monospace;
+  white-space: nowrap;
+}
+
+.price-loading {
+  color: #6a6a7a;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 1; }
+}
+
+.price-buy {
+  color: #4da6ff;
+}
+
+.price-sell {
+  color: #ff9933;
+}
+
+.price-na {
+  color: #4a4a4a;
+  font-style: italic;
+}
+
+.profit-positive {
+  color: #8bc34a;
+  font-weight: 600;
+}
+
+.profit-negative {
+  color: #ff4444;
+  font-weight: 600;
+}

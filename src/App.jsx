@@ -1,9 +1,11 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import './App.css'
 import { piTypeIds } from './data/piTypeIds'
 import { tier0Resources, tier1Products, tier2Products, tier3Products, tier4Products } from './data/piResources'
 import IconCell from './components/IconCell'
 import InputsCell from './components/InputsCell'
+import PriceCell from './components/PriceCell'
+import { useMarketPrices } from './hooks/useMarketPrices'
 
 function App() {
   const [filterTier, setFilterTier] = useState('All')
@@ -47,6 +49,13 @@ function App() {
       return a.name.localeCompare(b.name)
     })
 
+  // Get all unique type IDs for price fetching
+  const typeIds = useMemo(() => {
+    return filteredProducts.map(p => p.typeId)
+  }, [filteredProducts])
+
+  const { prices, loading: pricesLoading } = useMarketPrices(typeIds)
+
   return (
     <div className="app">
       <header className="app-header">
@@ -71,12 +80,6 @@ function App() {
                 onClick={() => setFilterTier('All')}
               >
                 All Tiers
-              </button>
-              <button 
-                className={filterTier === 'P0' ? 'active' : ''} 
-                onClick={() => setFilterTier('P0')}
-              >
-                P0
               </button>
               <button 
                 className={filterTier === 'P1' ? 'active' : ''} 
@@ -117,6 +120,8 @@ function App() {
                 <th>Volume (m³)</th>
                 <th>Inputs</th>
                 <th>Output/Cycle</th>
+                <th>Buy (Syndicate)</th>
+                <th>Sell (Jita)</th>
               </tr>
             </thead>
             <tbody>
@@ -135,6 +140,20 @@ function App() {
                   <td className="volume-cell">{product.volume}</td>
                   <InputsCell inputs={product.inputs} />
                   <td className="output-cell">{product.outputPer || '-'}</td>
+                  <td className="price-cell">
+                    {pricesLoading ? (
+                      <span className="price-loading">...</span>
+                    ) : (
+                      <PriceCell price={prices[product.typeId]?.buy} type="buy" />
+                    )}
+                  </td>
+                  <td className="price-cell">
+                    {pricesLoading ? (
+                      <span className="price-loading">...</span>
+                    ) : (
+                      <PriceCell price={prices[product.typeId]?.sell} type="sell" />
+                    )}
+                  </td>
                 </tr>
               ))}
             </tbody>

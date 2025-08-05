@@ -25,23 +25,24 @@ export const planetTypes = {
   }
 }
 
+// NOTE: P0 resources commented out but kept for reference
 export const tier0Resources = {
-  'Aqueous Liquids': { tier: 0, inputs: [], outputPer: 3000 },
-  'Autotrophs': { tier: 0, inputs: [], outputPer: 3000 },
-  'Base Metals': { tier: 0, inputs: [], outputPer: 3000 },
-  'Carbon Compounds': { tier: 0, inputs: [], outputPer: 3000 },
-  'Complex Organisms': { tier: 0, inputs: [], outputPer: 3000 },
-  'Felsic Magma': { tier: 0, inputs: [], outputPer: 3000 },
-  'Heavy Metals': { tier: 0, inputs: [], outputPer: 3000 },
-  'Heavy Water': { tier: 0, inputs: [], outputPer: 3000 },
-  'Ionic Solutions': { tier: 0, inputs: [], outputPer: 3000 },
-  'Micro Organisms': { tier: 0, inputs: [], outputPer: 3000 },
-  'Noble Gas': { tier: 0, inputs: [], outputPer: 3000 },
-  'Noble Metals': { tier: 0, inputs: [], outputPer: 3000 },
-  'Non-CS Crystals': { tier: 0, inputs: [], outputPer: 3000 },
-  'Planktic Colonies': { tier: 0, inputs: [], outputPer: 3000 },
-  'Reactive Gas': { tier: 0, inputs: [], outputPer: 3000 },
-  'Suspended Plasma': { tier: 0, inputs: [], outputPer: 3000 }
+  // 'Aqueous Liquids': { tier: 0, inputs: [], outputPer: 3000 },
+  // 'Autotrophs': { tier: 0, inputs: [], outputPer: 3000 },
+  // 'Base Metals': { tier: 0, inputs: [], outputPer: 3000 },
+  // 'Carbon Compounds': { tier: 0, inputs: [], outputPer: 3000 },
+  // 'Complex Organisms': { tier: 0, inputs: [], outputPer: 3000 },
+  // 'Felsic Magma': { tier: 0, inputs: [], outputPer: 3000 },
+  // 'Heavy Metals': { tier: 0, inputs: [], outputPer: 3000 },
+  // 'Heavy Water': { tier: 0, inputs: [], outputPer: 3000 },
+  // 'Ionic Solutions': { tier: 0, inputs: [], outputPer: 3000 },
+  // 'Micro Organisms': { tier: 0, inputs: [], outputPer: 3000 },
+  // 'Noble Gas': { tier: 0, inputs: [], outputPer: 3000 },
+  // 'Noble Metals': { tier: 0, inputs: [], outputPer: 3000 },
+  // 'Non-CS Crystals': { tier: 0, inputs: [], outputPer: 3000 },
+  // 'Planktic Colonies': { tier: 0, inputs: [], outputPer: 3000 },
+  // 'Reactive Gas': { tier: 0, inputs: [], outputPer: 3000 },
+  // 'Suspended Plasma': { tier: 0, inputs: [], outputPer: 3000 }
 }
 
 export const tier1Products = {
