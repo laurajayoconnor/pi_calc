@@ -47,14 +47,17 @@ function App() {
 
   const { prices, loading: pricesLoading } = useMarketPrices(typeIds)
   
-  // Helper function to calculate profit per m³ for sorting
+  // Helper function to calculate profit per m³ for sorting (only for P2 items)
   const calculateProfitPerM3 = (product, pricesData) => {
+    // Only calculate profit for P2 items
+    if (product.tier !== 'P2') return -Infinity // Sort non-P2 items to the bottom
+    
     if (!pricesData) return 0
     const productPrices = pricesData[product.typeId]
     if (!productPrices || !productPrices.buy || !productPrices.sell) return 0
     
     // For P2 products, calculate with ingredients
-    if (product.tier === 'P2' && product.inputs && product.inputs.length > 0) {
+    if (product.inputs && product.inputs.length > 0) {
       let totalInputCost = 0
       let hasAllPrices = true
       
@@ -85,9 +88,7 @@ function App() {
       return profit / totalVolume
     }
     
-    // For other tiers, simple calculation
-    const profit = productPrices.sell - productPrices.buy
-    return profit / product.volume
+    return 0
   }
 
   // Sort products - only sort by profit if prices are available
@@ -197,7 +198,7 @@ function App() {
                 <th>Output/Cycle</th>
                 <th>Buy (Syndicate)</th>
                 <th>Sell (Jita)</th>
-                <th>Profit/m³</th>
+                <th>Profit/m³ (P2)</th>
               </tr>
             </thead>
             <tbody>

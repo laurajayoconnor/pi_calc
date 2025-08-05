@@ -117,19 +117,20 @@ function ProductRow({ product, prices, pricesLoading }) {
   
   const costAnalysis = isExpandable && !pricesLoading ? calculateIngredientCost() : null
   
-  // Calculate profit per m³ for display
+  // Calculate profit per m³ for display (only for P2 items)
   const calculateProfitPerM3Display = () => {
+    // Only show profit for P2 items
+    if (product.tier !== 'P2') return null
+    
     const productPrices = prices[product.typeId]
     if (!productPrices || !productPrices.buy || !productPrices.sell) return null
     
-    // For P2 products, use the detailed calculation from costAnalysis
+    // Use the detailed calculation from costAnalysis
     if (costAnalysis && costAnalysis.profitPerM3Buy !== undefined) {
       return costAnalysis.profitPerM3Buy
     }
     
-    // For other tiers, simple calculation
-    const profit = productPrices.sell - productPrices.buy
-    return profit / product.volume
+    return null
   }
   
   const profitPerM3 = !pricesLoading ? calculateProfitPerM3Display() : null
