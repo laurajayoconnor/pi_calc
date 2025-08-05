@@ -90,6 +90,18 @@ function ProductRow({ product, prices, pricesLoading }) {
     const profitPerM3Buy = profitWithTaxBuy / totalOutputVolume
     const profitPerM3Sell = profitWithTaxSell / totalOutputVolume
     
+    // Calculate direct sale value of P1 ingredients
+    // Total P1 volume: 40 units * 2 ingredients * 0.19 m³ = 15.2 m³
+    const totalP1Volume = 40 * product.inputs.length * 0.19
+    const directP1SaleValue = totalSellCost
+    const directP1ExportTax = directP1SaleValue * exportTaxRate
+    const directP1Profit = directP1SaleValue - directP1ExportTax
+    const directP1ProfitPerM3 = directP1Profit / totalP1Volume
+    
+    // Opportunity cost: profit from crafting vs selling P1 directly
+    const opportunityCost = profitWithTaxSell - directP1Profit
+    const opportunityCostPerM3 = profitPerM3Sell - directP1ProfitPerM3
+    
     return {
       ingredientDetails,
       totalBuyCost,
@@ -111,7 +123,14 @@ function ProductRow({ product, prices, pricesLoading }) {
       profitMarginWithTaxSell,
       totalOutputVolume,
       profitPerM3Buy,
-      profitPerM3Sell
+      profitPerM3Sell,
+      directP1SaleValue,
+      directP1ExportTax,
+      directP1Profit,
+      directP1ProfitPerM3,
+      totalP1Volume,
+      opportunityCost,
+      opportunityCostPerM3
     }
   }
   
@@ -303,6 +322,45 @@ function ProductRow({ product, prices, pricesLoading }) {
                     <span className="label">Profit per m³ (Jita inputs):</span>
                     <span className={`value ${costAnalysis.profitPerM3Sell > 0 ? 'profit-positive' : 'profit-negative'}`}>
                       {costAnalysis.profitPerM3Sell.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ISK/m³
+                    </span>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="opportunity-cost-analysis">
+                <h5>P1 Direct Sale vs P2 Crafting Comparison:</h5>
+                <div className="summary-grid">
+                  <div className="summary-item">
+                    <span className="label">P1 Direct Sale Value:</span>
+                    <span className="value">{costAnalysis.directP1SaleValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ISK</span>
+                  </div>
+                  <div className="summary-item">
+                    <span className="label">P1 Export Tax (3%):</span>
+                    <span className="value">{costAnalysis.directP1ExportTax.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ISK</span>
+                  </div>
+                  <div className="summary-item">
+                    <span className="label">P1 Direct Sale Profit:</span>
+                    <span className="value">{costAnalysis.directP1Profit.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ISK</span>
+                  </div>
+                  <div className="summary-item">
+                    <span className="label">P1 Total Volume:</span>
+                    <span className="value">{costAnalysis.totalP1Volume.toFixed(2)} m³</span>
+                  </div>
+                  <div className="summary-item">
+                    <span className="label">P1 Direct Sale Profit/m³:</span>
+                    <span className="value">{costAnalysis.directP1ProfitPerM3.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ISK/m³</span>
+                  </div>
+                  <div className="summary-item highlight">
+                    <span className="label">Additional Profit from P2 Crafting:</span>
+                    <span className={`value ${costAnalysis.opportunityCost > 0 ? 'profit-positive' : 'profit-negative'}`}>
+                      {costAnalysis.opportunityCost.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ISK
+                      ({costAnalysis.opportunityCost > 0 ? '+' : ''}{((costAnalysis.opportunityCost / costAnalysis.directP1Profit) * 100).toFixed(1)}%)
+                    </span>
+                  </div>
+                  <div className="summary-item highlight">
+                    <span className="label">Additional Profit/m³ from P2 Crafting:</span>
+                    <span className={`value ${costAnalysis.opportunityCostPerM3 > 0 ? 'profit-positive' : 'profit-negative'}`}>
+                      {costAnalysis.opportunityCostPerM3.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ISK/m³
                     </span>
                   </div>
                 </div>
