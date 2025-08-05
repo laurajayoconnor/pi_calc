@@ -218,204 +218,177 @@ function ProductRow({ product, prices, pricesLoading }) {
         <tr className="expanded-details">
           <td colSpan="10">
             <div className="cost-analysis">
-              <h4>Cost Analysis for {product.name}</h4>
+              <h4>Production Analysis for {product.name}</h4>
               
-              <div className="ingredient-costs">
-                <h5>Input Costs (per production cycle):</h5>
-                <table className="mini-table">
-                  <thead>
-                    <tr>
-                      <th>Ingredient</th>
-                      <th>Units Needed</th>
-                      <th>Buy Price</th>
-                      <th>Sell Price</th>
-                      <th>Total Buy Cost</th>
-                      <th>Total Sell Cost</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {costAnalysis.ingredientDetails.map((ingredient, idx) => {
-                      const ingredientData = piTypeIds[ingredient.name]
-                      return (
-                        <tr key={idx}>
-                          <td className="ingredient-name-cell">
-                            <div className="ingredient-with-icon">
-                              <img 
-                                src={`/icons/${ingredient.typeId}.png`}
-                                alt={ingredient.name}
-                                className="ingredient-icon"
-                                onError={(e) => {
-                                  e.target.style.display = 'none'
-                                  e.target.nextSibling.style.display = 'inline'
-                                }}
-                              />
-                              <span className="ingredient-icon-fallback" style={{ display: 'none' }}>
-                                {ingredientData?.icon || '📦'}
-                              </span>
-                              <span>{ingredient.name}</span>
-                            </div>
-                          </td>
-                          <td>{ingredient.unitsNeeded}</td>
-                          <td className="price-buy">{ingredient.buyPrice.toFixed(2)} ISK</td>
-                          <td className="price-sell">{ingredient.sellPrice.toFixed(2)} ISK</td>
-                          <td className="price-buy">{ingredient.totalBuyCost.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ISK</td>
-                          <td className="price-sell">{ingredient.totalSellCost.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ISK</td>
-                        </tr>
-                      )
-                    })}
-                  </tbody>
-                  <tfoot>
-                    <tr>
-                      <th colSpan="4">Total Input Cost:</th>
-                      <th className="price-buy">{costAnalysis.totalBuyCost.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ISK</th>
-                      <th className="price-sell">{costAnalysis.totalSellCost.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ISK</th>
-                    </tr>
-                  </tfoot>
-                </table>
-                
-                <h5>Production Output:</h5>
-                <table className="mini-table">
-                  <thead>
-                    <tr>
-                      <th>Product</th>
-                      <th>Units Produced</th>
-                      <th>Unit Price (Jita)</th>
-                      <th>Total Value</th>
-                      <th>Volume</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr>
-                      <td className="output-product-cell">
-                        <div className="ingredient-with-icon">
-                          <img 
-                            src={`/icons/${product.typeId}.png`}
-                            alt={product.name}
-                            className="ingredient-icon"
-                            onError={(e) => {
-                              e.target.style.display = 'none'
-                              e.target.nextSibling.style.display = 'inline'
-                            }}
-                          />
-                          <span className="ingredient-icon-fallback" style={{ display: 'none' }}>
-                            {product.icon || '📦'}
-                          </span>
-                          <span>{product.name}</span>
-                        </div>
-                      </td>
-                      <td>{costAnalysis.outputUnits}</td>
-                      <td className="price-sell">{prices[product.typeId]?.sell?.toFixed(2) || 'N/A'} ISK</td>
-                      <td className="price-sell">{costAnalysis.outputValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ISK</td>
-                      <td>{costAnalysis.totalOutputVolume.toFixed(2)} m³</td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-              
-              <div className="profit-summary">
-                <h5>Profit Analysis:</h5>
-                <div className="summary-grid">
-                  <div className="summary-item">
-                    <span className="label">Profit before tax (Syndicate inputs):</span>
-                    <span className={`value ${costAnalysis.profitFromBuy > 0 ? 'profit-positive' : 'profit-negative'}`}>
-                      {costAnalysis.profitFromBuy.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ISK ({costAnalysis.profitMarginBuy}%)
-                    </span>
-                  </div>
-                  <div className="summary-item">
-                    <span className="label">Profit before tax (Jita inputs):</span>
-                    <span className={`value ${costAnalysis.profitFromSell > 0 ? 'profit-positive' : 'profit-negative'}`}>
-                      {costAnalysis.profitFromSell.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ISK ({costAnalysis.profitMarginSell}%)
-                    </span>
-                  </div>
-                  <div className="summary-item">
-                    <span className="label">Import Tax (1.5% on inputs):</span>
-                    <span className="value">
-                      {costAnalysis.importTaxBuy.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ISK (Syndicate) / {costAnalysis.importTaxSell.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ISK (Jita)
-                    </span>
-                  </div>
-                  <div className="summary-item">
-                    <span className="label">Export Tax (3% on output):</span>
-                    <span className="value">
-                      {costAnalysis.exportTax.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ISK
-                    </span>
-                  </div>
-                  <div className="summary-item">
-                    <span className="label">Profit after tax (Syndicate inputs):</span>
-                    <span className={`value ${costAnalysis.profitWithTaxBuy > 0 ? 'profit-positive' : 'profit-negative'}`}>
-                      {costAnalysis.profitWithTaxBuy.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ISK ({costAnalysis.profitMarginWithTaxBuy}%)
-                    </span>
-                  </div>
-                  <div className="summary-item">
-                    <span className="label">Profit after tax (Jita inputs):</span>
-                    <span className={`value ${costAnalysis.profitWithTaxSell > 0 ? 'profit-positive' : 'profit-negative'}`}>
-                      {costAnalysis.profitWithTaxSell.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ISK ({costAnalysis.profitMarginWithTaxSell}%)
-                    </span>
-                  </div>
-                  <div className="summary-item">
-                    <span className="label">Profit per m³ (Syndicate inputs):</span>
-                    <span className={`value ${costAnalysis.profitPerM3Buy > 0 ? 'profit-positive' : 'profit-negative'}`}>
+              <table className="production-table">
+                <thead>
+                  <tr>
+                    <th>Item</th>
+                    <th>Type</th>
+                    <th>Quantity</th>
+                    <th>Volume</th>
+                    <th>Buy (Syndicate)</th>
+                    <th>Sell (Jita)</th>
+                    <th>Profit/m³</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {/* Input ingredients */}
+                  {costAnalysis.ingredientDetails.map((ingredient, idx) => {
+                    const ingredientData = piTypeIds[ingredient.name]
+                    return (
+                      <tr key={`input-${idx}`} className="input-row">
+                        <td className="item-cell">
+                          <div className="item-with-icon">
+                            <img 
+                              src={`/icons/${ingredient.typeId}.png`}
+                              alt={ingredient.name}
+                              className="item-icon"
+                              onError={(e) => {
+                                e.target.style.display = 'none'
+                                e.target.nextSibling.style.display = 'inline'
+                              }}
+                            />
+                            <span className="item-icon-fallback" style={{ display: 'none' }}>
+                              {ingredientData?.icon || '📦'}
+                            </span>
+                            <span>{ingredient.name}</span>
+                          </div>
+                        </td>
+                        <td className="type-cell">Input</td>
+                        <td className="quantity-cell">{ingredient.unitsNeeded}</td>
+                        <td className="volume-cell">{(ingredient.unitsNeeded * 0.19).toFixed(2)} m³</td>
+                        <td className="price-buy">{ingredient.totalBuyCost.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ISK</td>
+                        <td className="price-sell">{ingredient.totalSellCost.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ISK</td>
+                        <td>-</td>
+                      </tr>
+                    )
+                  })}
+                  
+                  {/* Subtotal row */}
+                  <tr className="subtotal-row">
+                    <td colSpan="4" className="subtotal-label">Input Subtotal</td>
+                    <td className="price-buy">{costAnalysis.totalBuyCost.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ISK</td>
+                    <td className="price-sell">{costAnalysis.totalSellCost.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ISK</td>
+                    <td>-</td>
+                  </tr>
+                  
+                  {/* Tax rows */}
+                  <tr className="tax-row">
+                    <td colSpan="4" className="tax-label">Import Tax (1.5%)</td>
+                    <td className="tax-value">-{costAnalysis.importTaxBuy.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ISK</td>
+                    <td className="tax-value">-{costAnalysis.importTaxSell.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ISK</td>
+                    <td>-</td>
+                  </tr>
+                  
+                  {/* Output product */}
+                  <tr className="output-row">
+                    <td className="item-cell">
+                      <div className="item-with-icon">
+                        <img 
+                          src={`/icons/${product.typeId}.png`}
+                          alt={product.name}
+                          className="item-icon"
+                          onError={(e) => {
+                            e.target.style.display = 'none'
+                            e.target.nextSibling.style.display = 'inline'
+                          }}
+                        />
+                        <span className="item-icon-fallback" style={{ display: 'none' }}>
+                          {product.icon || '📦'}
+                        </span>
+                        <span>{product.name}</span>
+                      </div>
+                    </td>
+                    <td className="type-cell">Output</td>
+                    <td className="quantity-cell">{costAnalysis.outputUnits}</td>
+                    <td className="volume-cell">{costAnalysis.totalOutputVolume.toFixed(2)} m³</td>
+                    <td>-</td>
+                    <td className="price-sell">{costAnalysis.outputValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ISK</td>
+                    <td className={costAnalysis.profitPerM3Buy > 0 ? 'profit-positive' : 'profit-negative'}>
                       {costAnalysis.profitPerM3Buy.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ISK/m³
-                    </span>
-                  </div>
-                  <div className="summary-item">
-                    <span className="label">Profit per m³ (Jita inputs):</span>
-                    <span className={`value ${costAnalysis.profitPerM3Sell > 0 ? 'profit-positive' : 'profit-negative'}`}>
-                      {costAnalysis.profitPerM3Sell.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ISK/m³
-                    </span>
-                  </div>
-                </div>
-              </div>
+                    </td>
+                  </tr>
+                  
+                  {/* Export tax */}
+                  <tr className="tax-row">
+                    <td colSpan="4" className="tax-label">Export Tax (3%)</td>
+                    <td colSpan="2" className="tax-value">-{costAnalysis.exportTax.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ISK</td>
+                    <td>-</td>
+                  </tr>
+                  
+                  {/* Net profit row */}
+                  <tr className="profit-row">
+                    <td colSpan="4" className="profit-label">Net Profit</td>
+                    <td className={costAnalysis.profitWithTaxBuy > 0 ? 'profit-positive' : 'profit-negative'}>
+                      {costAnalysis.profitWithTaxBuy.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ISK
+                    </td>
+                    <td className={costAnalysis.profitWithTaxSell > 0 ? 'profit-positive' : 'profit-negative'}>
+                      {costAnalysis.profitWithTaxSell.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ISK
+                    </td>
+                    <td className={costAnalysis.profitPerM3Buy > 0 ? 'profit-positive' : 'profit-negative'}>
+                      {((costAnalysis.profitWithTaxBuy / costAnalysis.outputValue) * 100).toFixed(1)}%
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
               
-              <div className="opportunity-cost-analysis">
-                <h5>P1 Direct Trade vs P2 Crafting Comparison:</h5>
-                <div className="summary-grid">
-                  <div className="summary-item">
-                    <span className="label">Option 1 - Direct P1 Trade:</span>
-                    <span className="value" style={{ fontWeight: 'bold' }}>Buy in Syndicate → Sell at Jita</span>
-                  </div>
-                  <div className="summary-item">
-                    <span className="label">P1 Buy Cost (Syndicate):</span>
-                    <span className="value">{costAnalysis.p1BuyCost.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ISK</span>
-                  </div>
-                  <div className="summary-item">
-                    <span className="label">P1 Sell Value (Jita):</span>
-                    <span className="value">{costAnalysis.p1SellValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ISK</span>
-                  </div>
-                  <div className="summary-item">
-                    <span className="label">P1 Export Tax (3%):</span>
-                    <span className="value">{costAnalysis.p1ExportTax.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ISK</span>
-                  </div>
-                  <div className="summary-item">
-                    <span className="label">P1 Direct Trade Profit:</span>
-                    <span className={`value ${costAnalysis.p1DirectProfit > 0 ? 'profit-positive' : 'profit-negative'}`}>
+              <h5 className="comparison-header">P1 Direct Trade vs P2 Crafting:</h5>
+              <table className="comparison-table">
+                <thead>
+                  <tr>
+                    <th>Scenario</th>
+                    <th>Volume</th>
+                    <th>Revenue</th>
+                    <th>Cost</th>
+                    <th>Tax</th>
+                    <th>Net Profit</th>
+                    <th>Profit/m³</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr className="p1-trade-row">
+                    <td>P1 Direct Trade</td>
+                    <td>{costAnalysis.totalP1Volume.toFixed(2)} m³</td>
+                    <td className="price-sell">{costAnalysis.p1SellValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ISK</td>
+                    <td className="price-buy">{costAnalysis.p1BuyCost.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ISK</td>
+                    <td className="tax-value">{costAnalysis.p1ExportTax.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ISK</td>
+                    <td className={costAnalysis.p1DirectProfit > 0 ? 'profit-positive' : 'profit-negative'}>
                       {costAnalysis.p1DirectProfit.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ISK
-                    </span>
-                  </div>
-                  <div className="summary-item">
-                    <span className="label">P1 Total Volume:</span>
-                    <span className="value">{costAnalysis.totalP1Volume.toFixed(2)} m³</span>
-                  </div>
-                  <div className="summary-item">
-                    <span className="label">P1 Profit/m³:</span>
-                    <span className={`value ${costAnalysis.p1DirectProfitPerM3 > 0 ? 'profit-positive' : 'profit-negative'}`}>
+                    </td>
+                    <td className={costAnalysis.p1DirectProfitPerM3 > 0 ? 'profit-positive' : 'profit-negative'}>
                       {costAnalysis.p1DirectProfitPerM3.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ISK/m³
-                    </span>
-                  </div>
-                  <div className="summary-item highlight">
-                    <span className="label">Option 2 - P2 Crafting Benefit:</span>
-                    <span className={`value ${costAnalysis.additionalProfitFromCrafting > 0 ? 'profit-positive' : 'profit-negative'}`}>
+                    </td>
+                  </tr>
+                  <tr className="p2-craft-row">
+                    <td>P2 Crafting</td>
+                    <td>{costAnalysis.totalOutputVolume.toFixed(2)} m³</td>
+                    <td className="price-sell">{costAnalysis.outputValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ISK</td>
+                    <td className="price-buy">{costAnalysis.totalBuyCost.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ISK</td>
+                    <td className="tax-value">{(costAnalysis.importTaxBuy + costAnalysis.exportTax).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ISK</td>
+                    <td className={costAnalysis.profitWithTaxBuy > 0 ? 'profit-positive' : 'profit-negative'}>
+                      {costAnalysis.profitWithTaxBuy.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ISK
+                    </td>
+                    <td className={costAnalysis.profitPerM3Buy > 0 ? 'profit-positive' : 'profit-negative'}>
+                      {costAnalysis.profitPerM3Buy.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ISK/m³
+                    </td>
+                  </tr>
+                  <tr className="difference-row">
+                    <td>Crafting Advantage</td>
+                    <td>-</td>
+                    <td>-</td>
+                    <td>-</td>
+                    <td>-</td>
+                    <td className={costAnalysis.additionalProfitFromCrafting > 0 ? 'profit-positive' : 'profit-negative'}>
                       {costAnalysis.additionalProfitFromCrafting > 0 ? '+' : ''}{costAnalysis.additionalProfitFromCrafting.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ISK
                       ({costAnalysis.additionalProfitFromCrafting > 0 ? '+' : ''}{costAnalysis.percentageGain.toFixed(1)}%)
-                    </span>
-                  </div>
-                  <div className="summary-item highlight">
-                    <span className="label">P2 Additional Profit/m³:</span>
-                    <span className={`value ${costAnalysis.additionalProfitPerM3 > 0 ? 'profit-positive' : 'profit-negative'}`}>
+                    </td>
+                    <td className={costAnalysis.additionalProfitPerM3 > 0 ? 'profit-positive' : 'profit-negative'}>
                       {costAnalysis.additionalProfitPerM3 > 0 ? '+' : ''}{costAnalysis.additionalProfitPerM3.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ISK/m³
-                    </span>
-                  </div>
-                </div>
-              </div>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
           </td>
         </tr>
