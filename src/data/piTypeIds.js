@@ -70,7 +70,7 @@ export const piTypeIds = {
   'Cryoprotectant Solution': { typeId: 2367, tier: 'P3', volume: 3.0, icon: '🧊' },
   'Data Chips': { typeId: 17392, tier: 'P3', volume: 3.0, icon: '💾' },
   'Gel-Matrix Biopaste': { typeId: 2348, tier: 'P3', volume: 3.0, icon: '🧬' },
-  'Guidance Systems': { typeId: 2520, tier: 'P3', volume: 3.0, icon: '🎯' }, // Type ID may be incorrect
+  'Guidance Systems': { typeId: 9834, tier: 'P3', volume: 3.0, icon: '🎯' },
   'Hazmat Detection Systems': { typeId: 2366, tier: 'P3', volume: 3.0, icon: '⚠️' },
   'Hermetic Membranes': { typeId: 2361, tier: 'P3', volume: 3.0, icon: '🛡️' },
   'High-Tech Transmitters': { typeId: 17898, tier: 'P3', volume: 3.0, icon: '📡' },

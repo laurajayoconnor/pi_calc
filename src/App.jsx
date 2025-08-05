@@ -30,10 +30,27 @@ function App() {
   }
 
   const products = getAllProducts()
+
+  // Filter products based on search and tier
+  const filteredProductsBase = useMemo(() => {
+    return products.filter(product => {
+      const matchesTier = filterTier === 'All' || product.tier === filterTier
+      const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase())
+      return matchesTier && matchesSearch
+    })
+  }, [filterTier, searchTerm])
+
+  // Get all unique type IDs for price fetching
+  const typeIds = useMemo(() => {
+    return filteredProductsBase.map(p => p.typeId)
+  }, [filteredProductsBase])
+
+  const { prices, loading: pricesLoading } = useMarketPrices(typeIds)
   
   // Helper function to calculate profit per m³ for sorting
-  const calculateProfitPerM3 = (product) => {
-    const productPrices = prices[product.typeId]
+  const calculateProfitPerM3 = (product, pricesData) => {
+    if (!pricesData) return 0
+    const productPrices = pricesData[product.typeId]
     if (!productPrices || !productPrices.buy || !productPrices.sell) return 0
     
     // For P2 products, calculate with ingredients
@@ -48,7 +65,7 @@ function App() {
           break
         }
         
-        const inputPrices = prices[inputData.typeId]
+        const inputPrices = pricesData[inputData.typeId]
         if (!inputPrices || inputPrices.buy === null) {
           hasAllPrices = false
           break
@@ -73,36 +90,31 @@ function App() {
     return profit / product.volume
   }
 
-  // Filter and sort products
-  const filteredProducts = products
-    .filter(product => {
-      const matchesTier = filterTier === 'All' || product.tier === filterTier
-      const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase())
-      return matchesTier && matchesSearch
-    })
-    .sort((a, b) => {
-      if (sortBy === 'profitPerM3') {
-        // Sort by profit per m³ (descending)
-        const profitA = calculateProfitPerM3(a)
-        const profitB = calculateProfitPerM3(b)
+  // Sort products - only sort by profit if prices are available
+  const filteredProducts = useMemo(() => {
+    const sorted = [...filteredProductsBase]
+    
+    if (sortBy === 'profitPerM3' && prices && !pricesLoading) {
+      // Sort by profit per m³ (descending)
+      sorted.sort((a, b) => {
+        const profitA = calculateProfitPerM3(a, prices)
+        const profitB = calculateProfitPerM3(b, prices)
         return profitB - profitA
-      } else {
-        // Default tier-based sorting
+      })
+    } else {
+      // Default tier-based sorting
+      sorted.sort((a, b) => {
         const tierOrder = ['P0', 'P1', 'P2', 'P3', 'P4']
         const tierDiff = tierOrder.indexOf(a.tier) - tierOrder.indexOf(b.tier)
         if (tierDiff !== 0) return tierDiff
         
         // Then sort alphabetically within each tier
         return a.name.localeCompare(b.name)
-      }
-    })
-
-  // Get all unique type IDs for price fetching
-  const typeIds = useMemo(() => {
-    return filteredProducts.map(p => p.typeId)
-  }, [filteredProducts])
-
-  const { prices, loading: pricesLoading } = useMarketPrices(typeIds)
+      })
+    }
+    
+    return sorted
+  }, [filteredProductsBase, sortBy, prices, pricesLoading])
 
   return (
     <div className="app">
