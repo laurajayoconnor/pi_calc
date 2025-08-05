@@ -272,19 +272,49 @@ function ProductRow({ product, prices, pricesLoading }) {
                     </tr>
                   </tfoot>
                 </table>
+                
+                <h5>Production Output:</h5>
+                <table className="mini-table">
+                  <thead>
+                    <tr>
+                      <th>Product</th>
+                      <th>Units Produced</th>
+                      <th>Unit Price (Jita)</th>
+                      <th>Total Value</th>
+                      <th>Volume</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td className="output-product-cell">
+                        <div className="ingredient-with-icon">
+                          <img 
+                            src={`/icons/${product.typeId}.png`}
+                            alt={product.name}
+                            className="ingredient-icon"
+                            onError={(e) => {
+                              e.target.style.display = 'none'
+                              e.target.nextSibling.style.display = 'inline'
+                            }}
+                          />
+                          <span className="ingredient-icon-fallback" style={{ display: 'none' }}>
+                            {product.icon || '📦'}
+                          </span>
+                          <span>{product.name}</span>
+                        </div>
+                      </td>
+                      <td>{costAnalysis.outputUnits}</td>
+                      <td className="price-sell">{prices[product.typeId]?.sell?.toFixed(2) || 'N/A'} ISK</td>
+                      <td className="price-sell">{costAnalysis.outputValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ISK</td>
+                      <td>{costAnalysis.totalOutputVolume.toFixed(2)} m³</td>
+                    </tr>
+                  </tbody>
+                </table>
               </div>
               
               <div className="profit-summary">
-                <h5>Production Summary:</h5>
+                <h5>Profit Analysis:</h5>
                 <div className="summary-grid">
-                  <div className="summary-item">
-                    <span className="label">Output:</span>
-                    <span className="value">{costAnalysis.outputUnits} units of {product.name} ({costAnalysis.totalOutputVolume} m³)</span>
-                  </div>
-                  <div className="summary-item">
-                    <span className="label">Output Value (Jita Sell):</span>
-                    <span className="value price-sell">{costAnalysis.outputValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ISK</span>
-                  </div>
                   <div className="summary-item">
                     <span className="label">Profit before tax (Syndicate inputs):</span>
                     <span className={`value ${costAnalysis.profitFromBuy > 0 ? 'profit-positive' : 'profit-negative'}`}>

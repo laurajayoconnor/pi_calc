@@ -487,3 +487,7 @@
   background: #1e2a4a;
   border: 1px solid #ff6b35;
 }
+
+.output-product-cell {
+  font-weight: 500;
+}
