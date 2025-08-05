@@ -3,6 +3,7 @@ import IconCell from './IconCell'
 import InputsCell from './InputsCell'
 import PriceCell from './PriceCell'
 import { piTypeIds } from '../data/piTypeIds'
+import { piTaxValues } from '../data/piTaxValues'
 
 function ProductRow({ product, prices, pricesLoading }) {
   const [isExpanded, setIsExpanded] = useState(false)
@@ -59,20 +60,30 @@ function ProductRow({ product, prices, pricesLoading }) {
     const outputUnits = 5
     const outputValue = productPrices.sell * outputUnits
     
-    // POCO tax rates
-    const importTaxRate = 0.015 // 1.5% (half of 3% for imports)
-    const exportTaxRate = 0.03  // 3% (full rate for exports)
+    // POCO tax rates - default 10% which splits as:
+    const importTaxRate = 0.05 // 5% for imports (half of base 10%)
+    const exportTaxRate = 0.10  // 10% for exports (full rate)
     
-    // Calculate import taxes for P1 materials
-    const importTaxBuy = totalBuyCost * importTaxRate
-    const importTaxSell = totalSellCost * importTaxRate
+    // Calculate import AND export taxes for P1 materials using base values
+    // P1 materials are both imported AND exported from/to the POCO
+    let totalP1ImportExportTax = 0
+    ingredientDetails.forEach(ingredient => {
+      const baseValue = piTaxValues[ingredient.name] || 0
+      const importTax = baseValue * ingredient.unitsNeeded * importTaxRate
+      const exportTax = baseValue * ingredient.unitsNeeded * exportTaxRate
+      totalP1ImportExportTax += importTax + exportTax
+    })
     
-    // Calculate export tax for P2 product
-    const exportTax = outputValue * exportTaxRate
+    // Calculate import AND export tax for P2 product using base value
+    const p2BaseValue = piTaxValues[product.name] || 0
+    const p2ImportTax = p2BaseValue * outputUnits * importTaxRate
+    const p2ExportTax = p2BaseValue * outputUnits * exportTaxRate
+    const totalP2Tax = p2ImportTax + p2ExportTax
     
-    // Total costs including taxes
-    const totalCostWithTaxBuy = totalBuyCost + importTaxBuy + exportTax
-    const totalCostWithTaxSell = totalSellCost + importTaxSell + exportTax
+    // Total costs including all taxes
+    const totalTaxes = totalP1ImportExportTax + totalP2Tax
+    const totalCostWithTaxBuy = totalBuyCost + totalTaxes
+    const totalCostWithTaxSell = totalSellCost + totalTaxes
     
     const profitFromBuy = outputValue - totalBuyCost
     const profitFromSell = outputValue - totalSellCost
@@ -97,8 +108,15 @@ function ProductRow({ product, prices, pricesLoading }) {
     // Option 1: Buy P1 in Syndicate, transport to Jita, sell
     const p1BuyCost = totalBuyCost // Cost to buy P1 in Syndicate
     const p1SellValue = totalSellCost // Revenue from selling P1 at Jita
-    const p1ExportTax = p1SellValue * exportTaxRate // 3% tax on selling at Jita
-    const p1DirectProfit = p1SellValue - p1BuyCost - p1ExportTax
+    
+    // P1 direct trade only pays export tax at Jita (no import/export at planet)
+    let p1DirectExportTax = 0
+    ingredientDetails.forEach(ingredient => {
+      const baseValue = piTaxValues[ingredient.name] || 0
+      p1DirectExportTax += baseValue * ingredient.unitsNeeded * exportTaxRate
+    })
+    
+    const p1DirectProfit = p1SellValue - p1BuyCost - p1DirectExportTax
     const p1DirectProfitPerM3 = p1DirectProfit / totalP1Volume
     
     // Option 2: Buy P1 in Syndicate, craft P2, sell P2 at Jita (already calculated above)
@@ -119,9 +137,11 @@ function ProductRow({ product, prices, pricesLoading }) {
       profitFromSell,
       profitMarginBuy,
       profitMarginSell,
-      importTaxBuy,
-      importTaxSell,
-      exportTax,
+      totalP1ImportExportTax,
+      p2ImportTax,
+      p2ExportTax,
+      totalP2Tax,
+      totalTaxes,
       totalCostWithTaxBuy,
       totalCostWithTaxSell,
       profitWithTaxBuy,
@@ -133,7 +153,7 @@ function ProductRow({ product, prices, pricesLoading }) {
       profitPerM3Sell,
       p1BuyCost,
       p1SellValue,
-      p1ExportTax,
+      p1DirectExportTax,
       p1DirectProfit,
       p1DirectProfitPerM3,
       totalP1Volume,
@@ -273,11 +293,10 @@ function ProductRow({ product, prices, pricesLoading }) {
                     <td>-</td>
                   </tr>
                   
-                  {/* Tax rows */}
+                  {/* P1 Tax row */}
                   <tr className="tax-row">
-                    <td colSpan="4" className="tax-label">Import Tax (1.5%)</td>
-                    <td className="tax-value">-{costAnalysis.importTaxBuy.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ISK</td>
-                    <td className="tax-value">-{costAnalysis.importTaxSell.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ISK</td>
+                    <td colSpan="4" className="tax-label">P1 Import/Export Tax (5%/10%)</td>
+                    <td colSpan="2" className="tax-value">-{costAnalysis.totalP1ImportExportTax.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ISK</td>
                     <td>-</td>
                   </tr>
                   
@@ -310,10 +329,10 @@ function ProductRow({ product, prices, pricesLoading }) {
                     </td>
                   </tr>
                   
-                  {/* Export tax */}
+                  {/* P2 tax */}
                   <tr className="tax-row">
-                    <td colSpan="4" className="tax-label">Export Tax (3%)</td>
-                    <td colSpan="2" className="tax-value">-{costAnalysis.exportTax.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ISK</td>
+                    <td colSpan="4" className="tax-label">P2 Import/Export Tax (5%/10%)</td>
+                    <td colSpan="2" className="tax-value">-{costAnalysis.totalP2Tax.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ISK</td>
                     <td>-</td>
                   </tr>
                   
@@ -352,7 +371,7 @@ function ProductRow({ product, prices, pricesLoading }) {
                     <td>{costAnalysis.totalP1Volume.toFixed(2)} m³</td>
                     <td className="price-sell">{costAnalysis.p1SellValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ISK</td>
                     <td className="price-buy">{costAnalysis.p1BuyCost.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ISK</td>
-                    <td className="tax-value">{costAnalysis.p1ExportTax.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ISK</td>
+                    <td className="tax-value">{costAnalysis.p1DirectExportTax.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ISK</td>
                     <td className={costAnalysis.p1DirectProfit > 0 ? 'profit-positive' : 'profit-negative'}>
                       {costAnalysis.p1DirectProfit.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ISK
                     </td>
@@ -365,7 +384,7 @@ function ProductRow({ product, prices, pricesLoading }) {
                     <td>{costAnalysis.totalOutputVolume.toFixed(2)} m³</td>
                     <td className="price-sell">{costAnalysis.outputValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ISK</td>
                     <td className="price-buy">{costAnalysis.totalBuyCost.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ISK</td>
-                    <td className="tax-value">{(costAnalysis.importTaxBuy + costAnalysis.exportTax).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ISK</td>
+                    <td className="tax-value">{costAnalysis.totalTaxes.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ISK</td>
                     <td className={costAnalysis.profitWithTaxBuy > 0 ? 'profit-positive' : 'profit-negative'}>
                       {costAnalysis.profitWithTaxBuy.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ISK
                     </td>
