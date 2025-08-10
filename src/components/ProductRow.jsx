@@ -2,8 +2,10 @@ import { useState } from 'react'
 import IconCell from './IconCell'
 import InputsCell from './InputsCell'
 import PriceCell from './PriceCell'
+import Tooltip from './Tooltip'
 import { piTypeIds } from '../data/piTypeIds'
 import { piTaxValues } from '../data/piTaxValues'
+import { tier2Products, tier3Products, tier4Products } from '../data/piResources'
 
 function ProductRow({ product, prices, pricesLoading }) {
   const [isExpanded, setIsExpanded] = useState(false)
@@ -183,13 +185,330 @@ function ProductRow({ product, prices, pricesLoading }) {
     
     // Use the percentage gain from costAnalysis
     if (costAnalysis && costAnalysis.percentageGain !== undefined) {
-      return costAnalysis.percentageGain
+      return {
+        percentage: costAnalysis.percentageGain,
+        details: costAnalysis
+      }
     }
     
     return null
   }
   
   const craftingAdvantage = !pricesLoading ? calculateCraftingAdvantageDisplay() : null
+  
+  // Calculate tier below to final product profit percentage (with taxes)
+  const calculateTierBelowToProductProfit = () => {
+    // Skip if prices aren't loaded or if this is a P1 product
+    if (pricesLoading || !prices || product.tier === 'P1') return null
+    
+    const productPrices = prices[product.typeId]
+    if (!productPrices || !productPrices.sell) return null
+    
+    // Get direct inputs (tier below)
+    const productDetails = 
+      tier2Products[product.name] ||
+      tier3Products[product.name] || 
+      tier4Products[product.name]
+    
+    if (!productDetails || !productDetails.inputs) return null
+    
+    // Calculate total input cost
+    let totalInputCost = 0
+    let hasAllPrices = true
+    
+    // Determine output quantity
+    let outputQuantity = 1
+    if (product.tier === 'P2') outputQuantity = 5
+    else if (product.tier === 'P3') outputQuantity = 3
+    else if (product.tier === 'P4') outputQuantity = 1
+    
+    for (const inputName of productDetails.inputs) {
+      const inputData = piTypeIds[inputName]
+      if (!inputData) {
+        hasAllPrices = false
+        break
+      }
+      
+      const inputPrices = prices[inputData.typeId]
+      if (!inputPrices || inputPrices.buy === null) {
+        hasAllPrices = false
+        break
+      }
+      
+      // Determine how many inputs we need based on production ratios
+      let inputsNeeded = 1
+      if (product.tier === 'P2') {
+        inputsNeeded = 40 // 40 P1 to make 5 P2
+      } else if (product.tier === 'P3') {
+        inputsNeeded = 10 // 10 P2 to make 3 P3
+      } else if (product.tier === 'P4') {
+        // P4 items use different combinations - need to check the input tier
+        if (inputData.tier === 'P3') {
+          // P3 inputs to P4 use 6 units total, distributed among P3 inputs
+          const p3InputCount = productDetails.inputs.filter(inp => {
+            const data = piTypeIds[inp]
+            return data && data.tier === 'P3'
+          }).length
+          inputsNeeded = 6 / p3InputCount
+        } else if (inputData.tier === 'P1') {
+          // P1 inputs to P4 use 40 units
+          inputsNeeded = 40
+        } else if (inputData.tier === 'P2') {
+          // P2 inputs to P4 would use 10 units (though this is rare/non-existent)
+          inputsNeeded = 10
+        }
+      }
+      
+      totalInputCost += inputPrices.buy * inputsNeeded
+    }
+    
+    if (!hasAllPrices || totalInputCost === 0) return null
+    
+    // Calculate taxes
+    const importTaxRate = 0.015 // 1.5% for imports
+    const exportTaxRate = 0.03  // 3% for exports
+    
+    let totalImportTax = 0
+    let totalExportTax = 0
+    
+    // Import and export taxes for inputs (tier below)
+    for (const inputName of productDetails.inputs) {
+      const inputData = piTypeIds[inputName]
+      if (!inputData) continue
+      
+      const baseValue = piTaxValues[inputName] || 0
+      
+      let inputsNeeded = 1
+      if (product.tier === 'P2') {
+        inputsNeeded = 40
+        // P1 inputs only have import tax
+        totalImportTax += baseValue * inputsNeeded * importTaxRate
+      } else if (product.tier === 'P3') {
+        inputsNeeded = 10
+        // P2 inputs have both import and export tax
+        totalImportTax += baseValue * inputsNeeded * importTaxRate
+        totalExportTax += baseValue * inputsNeeded * exportTaxRate
+      } else if (product.tier === 'P4') {
+        // P4 items use different combinations - need to check the input tier
+        if (inputData.tier === 'P3') {
+          const p3InputCount = productDetails.inputs.filter(inp => {
+            const data = piTypeIds[inp]
+            return data && data.tier === 'P3'
+          }).length
+          inputsNeeded = 6 / p3InputCount
+          // P3 inputs have both import and export tax
+          totalImportTax += baseValue * inputsNeeded * importTaxRate
+          totalExportTax += baseValue * inputsNeeded * exportTaxRate
+        } else if (inputData.tier === 'P1') {
+          inputsNeeded = 40
+          // P1 inputs only have import tax
+          totalImportTax += baseValue * inputsNeeded * importTaxRate
+        } else if (inputData.tier === 'P2') {
+          inputsNeeded = 10
+          // P2 inputs have both import and export tax
+          totalImportTax += baseValue * inputsNeeded * importTaxRate
+          totalExportTax += baseValue * inputsNeeded * exportTaxRate
+        }
+      }
+    }
+    
+    // Export tax for output product
+    const outputBaseValue = piTaxValues[product.name] || 0
+    const outputExportTax = outputBaseValue * outputQuantity * exportTaxRate
+    
+    // Total costs including taxes
+    const totalCost = totalInputCost + totalImportTax + totalExportTax + outputExportTax
+    
+    // Calculate profit
+    const outputValue = productPrices.sell * outputQuantity
+    const profit = outputValue - totalCost
+    const profitPercentage = (profit / totalCost) * 100
+    
+    // Collect input details for tooltip
+    const inputDetails = []
+    for (const inputName of productDetails.inputs) {
+      const inputData = piTypeIds[inputName]
+      if (!inputData) continue
+      
+      const inputPrices = prices[inputData.typeId]
+      if (!inputPrices) continue
+      
+      let inputsNeeded = 1
+      if (product.tier === 'P2') {
+        inputsNeeded = 40
+      } else if (product.tier === 'P3') {
+        inputsNeeded = 10
+      } else if (product.tier === 'P4') {
+        if (inputData.tier === 'P3') {
+          const p3InputCount = productDetails.inputs.filter(inp => {
+            const data = piTypeIds[inp]
+            return data && data.tier === 'P3'
+          }).length
+          inputsNeeded = 6 / p3InputCount
+        } else if (inputData.tier === 'P1') {
+          inputsNeeded = 40
+        } else if (inputData.tier === 'P2') {
+          inputsNeeded = 10
+        }
+      }
+      
+      inputDetails.push({
+        name: inputName,
+        typeId: inputData.typeId,
+        tier: inputData.tier,
+        quantity: inputsNeeded,
+        price: inputPrices.buy,
+        cost: inputPrices.buy * inputsNeeded
+      })
+    }
+    
+    return {
+      percentage: profitPercentage,
+      inputDetails,
+      totalInputCost,
+      totalImportTax,
+      totalExportTax,
+      outputExportTax,
+      totalCost,
+      outputValue,
+      outputQuantity,
+      profit
+    }
+  }
+  
+  const tierBelowProfit = !pricesLoading ? calculateTierBelowToProductProfit() : null
+  
+  // Create tooltip content for crafting advantage
+  const craftingAdvantageTooltip = craftingAdvantage && craftingAdvantage.details ? (
+    <div className="tooltip-calculation">
+      <h4>Crafting Advantage Calculation</h4>
+      
+      <div className="tooltip-section">
+        <strong>Direct Trade Option:</strong>
+        <div className="tooltip-item">
+          <span>Buy {craftingAdvantage.details.directTradeVolume.toFixed(0)} m³ of {product.tier === 'P2' ? 'P1' : 'P2'} materials</span>
+          <span className="tooltip-cost">{craftingAdvantage.details.directTradeBuyCost.toLocaleString()} ISK</span>
+        </div>
+        <div className="tooltip-item">
+          <span>Sell in Jita</span>
+          <span className="tooltip-value">{craftingAdvantage.details.directTradeSellValue.toLocaleString()} ISK</span>
+        </div>
+        <div className="tooltip-item">
+          <span>Direct Trade Profit</span>
+          <span className={craftingAdvantage.details.directTradeProfit > 0 ? 'tooltip-profit' : 'tooltip-loss'}>
+            {craftingAdvantage.details.directTradeProfit.toLocaleString()} ISK
+          </span>
+        </div>
+      </div>
+      
+      <div className="tooltip-section">
+        <strong>Crafting Option:</strong>
+        <div className="tooltip-item">
+          <span>Input Cost</span>
+          <span className="tooltip-cost">{craftingAdvantage.details.totalBuyCost.toLocaleString()} ISK</span>
+        </div>
+        <div className="tooltip-item">
+          <span>Total Taxes</span>
+          <span className="tooltip-cost">{craftingAdvantage.details.totalProductionTaxes.toLocaleString()} ISK</span>
+        </div>
+        <div className="tooltip-item">
+          <span>Output Value ({craftingAdvantage.details.outputUnits} units)</span>
+          <span className="tooltip-value">{craftingAdvantage.details.outputValue.toLocaleString()} ISK</span>
+        </div>
+        <div className="tooltip-item">
+          <span>Crafting Profit</span>
+          <span className={craftingAdvantage.details.profitWithTaxBuy > 0 ? 'tooltip-profit' : 'tooltip-loss'}>
+            {craftingAdvantage.details.profitWithTaxBuy.toLocaleString()} ISK
+          </span>
+        </div>
+      </div>
+    </div>
+  ) : null
+  
+  // Create tooltip content for tier below profit
+  const tierBelowTooltip = tierBelowProfit && tierBelowProfit.inputDetails ? (
+    <div className="tooltip-calculation">
+      <h4>{product.name} Production from {product.tier === 'P2' ? 'P1' : product.tier === 'P3' ? 'P2' : 'Mixed'} Inputs</h4>
+      
+      <div className="tooltip-section">
+        <strong>Inputs (Buy in Syndicate):</strong>
+        {tierBelowProfit.inputDetails.map((input, idx) => (
+          <div key={idx} className="tooltip-item">
+            <img 
+              src={`/icons/${input.typeId}.png`}
+              alt={input.name}
+              className="tooltip-icon"
+              onError={(e) => {
+                e.target.style.display = 'none'
+                e.target.nextSibling.style.display = 'flex'
+              }}
+            />
+            <span className="tooltip-icon-fallback" style={{ display: 'none' }}>📦</span>
+            <span style={{ flex: 1, minWidth: 0 }}>
+              {input.quantity} × {input.name}
+            </span>
+            <span className="tooltip-cost">{input.cost.toLocaleString()} ISK</span>
+          </div>
+        ))}
+        <div className="tooltip-divider" />
+        <div className="tooltip-item">
+          <span>Total Input Cost</span>
+          <span className="tooltip-cost">{tierBelowProfit.totalInputCost.toLocaleString()} ISK</span>
+        </div>
+      </div>
+      
+      <div className="tooltip-section">
+        <strong>Taxes:</strong>
+        <div className="tooltip-item">
+          <span>Import Tax (1.5%)</span>
+          <span className="tooltip-cost">{tierBelowProfit.totalImportTax.toLocaleString()} ISK</span>
+        </div>
+        {tierBelowProfit.totalExportTax > 0 && (
+          <div className="tooltip-item">
+            <span>Input Export Tax (3%)</span>
+            <span className="tooltip-cost">{tierBelowProfit.totalExportTax.toLocaleString()} ISK</span>
+          </div>
+        )}
+        <div className="tooltip-item">
+          <span>Output Export Tax (3%)</span>
+          <span className="tooltip-cost">{tierBelowProfit.outputExportTax.toLocaleString()} ISK</span>
+        </div>
+      </div>
+      
+      <div className="tooltip-section">
+        <strong>Output (Sell in Jita):</strong>
+        <div className="tooltip-item">
+          <img 
+            src={`/icons/${product.typeId}.png`}
+            alt={product.name}
+            className="tooltip-icon"
+            onError={(e) => {
+              e.target.style.display = 'none'
+              e.target.nextSibling.style.display = 'flex'
+            }}
+          />
+          <span className="tooltip-icon-fallback" style={{ display: 'none' }}>{product.icon || '📦'}</span>
+          <span style={{ flex: 1, minWidth: 0 }}>
+            {tierBelowProfit.outputQuantity} × {product.name}
+          </span>
+          <span className="tooltip-value">{tierBelowProfit.outputValue.toLocaleString()} ISK</span>
+        </div>
+      </div>
+      
+      <div className="tooltip-section">
+        <div className="tooltip-item">
+          <span><strong>Total Cost</strong></span>
+          <span className="tooltip-cost">{tierBelowProfit.totalCost.toLocaleString()} ISK</span>
+        </div>
+        <div className="tooltip-item">
+          <span><strong>Net Profit</strong></span>
+          <span className={tierBelowProfit.profit > 0 ? 'tooltip-profit' : 'tooltip-loss'}>
+            {tierBelowProfit.profit.toLocaleString()} ISK
+          </span>
+        </div>
+      </div>
+    </div>
+  ) : null
   
   return (
     <>
@@ -208,18 +527,19 @@ function ProductRow({ product, prices, pricesLoading }) {
           )}
           {product.name}
         </td>
-        <td className="typeid-cell">{product.typeId}</td>
         <td className={`tier-cell tier-${product.tier.toLowerCase()}`}>
           {product.tier}
         </td>
-        <td className="volume-cell">{product.volume}</td>
         <InputsCell inputs={product.inputs} />
-        <td className="output-cell">{product.outputPer || '-'}</td>
         <td className="price-cell">
           {pricesLoading ? (
             <span className="price-loading">...</span>
           ) : (
-            <PriceCell price={prices[product.typeId]?.buy} type="buy" />
+            <PriceCell 
+              price={prices[product.typeId]?.buy} 
+              type="buy" 
+              jitaBuyAvg={prices[product.typeId]?.jitaBuyAvg}
+            />
           )}
         </td>
         <td className="price-cell">
@@ -233,18 +553,33 @@ function ProductRow({ product, prices, pricesLoading }) {
           {pricesLoading ? (
             <span className="price-loading">...</span>
           ) : craftingAdvantage !== null ? (
-            <span className={craftingAdvantage > 0 ? 'profit-positive' : 'profit-negative'}>
-              {craftingAdvantage > 0 ? '+' : ''}{craftingAdvantage.toFixed(1)}%
-            </span>
+            <Tooltip content={craftingAdvantageTooltip}>
+              <span className={craftingAdvantage.percentage > 0 ? 'profit-positive' : 'profit-negative'}>
+                {craftingAdvantage.percentage > 0 ? '+' : ''}{craftingAdvantage.percentage.toFixed(1)}%
+              </span>
+            </Tooltip>
           ) : (
             <span className="price-na">N/A</span>
+          )}
+        </td>
+        <td className="profit-cell">
+          {pricesLoading ? (
+            <span className="price-loading">...</span>
+          ) : tierBelowProfit !== null ? (
+            <Tooltip content={tierBelowTooltip}>
+              <span className={tierBelowProfit.percentage > 0 ? 'profit-positive' : 'profit-negative'}>
+                {tierBelowProfit.percentage > 0 ? '+' : ''}{tierBelowProfit.percentage.toFixed(1)}%
+              </span>
+            </Tooltip>
+          ) : (
+            <span className="price-na">-</span>
           )}
         </td>
       </tr>
       
       {isExpanded && costAnalysis && (
         <tr className="expanded-details">
-          <td colSpan="10">
+          <td colSpan="8">
             <div className="cost-analysis">
               <h4>Production Analysis for {product.name}</h4>
               

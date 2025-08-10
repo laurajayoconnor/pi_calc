@@ -52,8 +52,14 @@ export function useMarketPrices(typeIds) {
                 `https://esi.evetech.net/latest/markets/${JITA_REGION_ID}/orders/?type_id=${typeId}&order_type=sell`
               )
               
+              // Fetch Jita market history for 5-day average
+              const jitaHistoryResponse = await fetch(
+                `https://esi.evetech.net/latest/markets/${JITA_REGION_ID}/history/?type_id=${typeId}`
+              )
+              
               let bestBuy = null
               let bestSell = null
+              let jitaBuyAvg = null
               
               // Process Syndicate buy orders
               if (syndicateResponse.ok) {
@@ -72,9 +78,43 @@ export function useMarketPrices(typeIds) {
                 }
               }
               
+              // Process Jita market history for 5-day average buy price
+              if (jitaHistoryResponse.ok) {
+                const history = await jitaHistoryResponse.json()
+                
+                if (history.length > 0) {
+                  // Get the last 5 days of data
+                  const fiveDaysAgo = new Date()
+                  fiveDaysAgo.setDate(fiveDaysAgo.getDate() - 5)
+                  
+                  const recentHistory = history.filter(day => {
+                    const date = new Date(day.date)
+                    return date >= fiveDaysAgo
+                  })
+                  
+                  if (recentHistory.length > 0) {
+                    // Calculate weighted average based on volume
+                    let totalVolume = 0
+                    let totalValue = 0
+                    
+                    recentHistory.forEach(day => {
+                      // Use the average price for the day weighted by volume
+                      const avgPrice = (day.highest + day.lowest) / 2
+                      totalValue += avgPrice * day.volume
+                      totalVolume += day.volume
+                    })
+                    
+                    if (totalVolume > 0) {
+                      jitaBuyAvg = totalValue / totalVolume
+                    }
+                  }
+                }
+              }
+              
               newPrices[typeId] = {
                 buy: bestBuy,
                 sell: bestSell,
+                jitaBuyAvg: jitaBuyAvg,
                 spread: bestSell && bestBuy ? ((bestSell - bestBuy) / bestSell * 100).toFixed(2) : null,
                 profit: bestSell && bestBuy ? bestSell - bestBuy : null
               }

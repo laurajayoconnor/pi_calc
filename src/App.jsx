@@ -245,14 +245,12 @@ function App() {
               <tr>
                 <th>Icon</th>
                 <th>Name</th>
-                <th>Type ID</th>
                 <th>Tier</th>
-                <th>Volume (m³)</th>
                 <th>Inputs</th>
-                <th>Output/Cycle</th>
                 <th>Buy (Syndicate)</th>
                 <th>Sell (Jita)</th>
                 <th>Profit Crafting Advantage</th>
+                <th>Tier Below Profit %</th>
               </tr>
             </thead>
             <tbody>

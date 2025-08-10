@@ -137,7 +137,7 @@
   background: #1a1a2e;
   border: 1px solid #2a2a3e;
   border-radius: 8px;
-  overflow: hidden;
+  overflow-x: auto;
 }
 
 .materials-table {
@@ -150,11 +150,13 @@
 }
 
 .materials-table th {
-  padding: 1rem;
+  padding: 0.75rem 0.5rem;
   text-align: left;
   font-weight: 600;
+  font-size: 0.9rem;
   color: #ff6b35;
   border-bottom: 2px solid #ff6b35;
+  white-space: nowrap;
 }
 
 .materials-table tbody tr {
@@ -167,19 +169,20 @@
 }
 
 .materials-table td {
-  padding: 0.75rem 1rem;
+  padding: 0.5rem;
+  font-size: 0.9rem;
 }
 
 .icon-cell {
   text-align: center;
-  width: 80px;
-  padding: 0.5rem;
+  width: 50px;
+  padding: 0.25rem;
 }
 
 .icon-wrapper {
   position: relative;
-  width: 48px;
-  height: 48px;
+  width: 40px;
+  height: 40px;
   margin: 0 auto;
 }
 
@@ -484,5 +487,60 @@
 .difference-row {
   background: #1e2a4a;
   font-weight: 600;
+}
+
+/* Price comparison styles */
+.price-comparison {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  align-items: flex-start;
+  line-height: 1.2;
+}
+
+.price-jita-comparison {
+  font-size: 0.8em;
+  color: #a0a0a0;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.price-diff {
+  font-weight: 600;
+  font-size: 0.9em;
+}
+
+.price-diff.cheaper {
+  color: #4caf50;
+}
+
+.price-diff.expensive {
+  color: #ff5252;
+}
+
+/* Compact table styles for better screen fit */
+.materials-table th:nth-child(1), /* Icon */
+.materials-table td:nth-child(1) {
+  width: 50px;
+}
+
+.materials-table th:nth-child(3), /* Tier */
+.materials-table td:nth-child(3) {
+  width: 45px;
+}
+
+/* Make price columns more compact */
+.price-cell {
+  font-size: 0.85rem;
+}
+
+/* Profit columns */
+.materials-table th:nth-child(7), /* Crafting Advantage */
+.materials-table th:nth-child(8), /* P1->Product */
+.materials-table td:nth-child(7),
+.materials-table td:nth-child(8) {
+  width: 110px;
+  text-align: center;
 }
 

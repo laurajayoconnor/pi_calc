@@ -1,0 +1,106 @@
+.tooltip-popup {
+  position: fixed;
+  background: #1a1a2e;
+  border: 2px solid #ff6b35;
+  border-radius: 8px;
+  padding: 0.75rem;
+  z-index: 1000;
+  max-width: 400px;
+  min-width: 300px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+  font-size: 0.8rem;
+  color: #e0e0e0;
+  overflow: hidden;
+}
+
+.tooltip-popup h4 {
+  margin: 0 0 0.4rem 0;
+  color: #ff6b35;
+  font-size: 0.9rem;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  line-height: 1.2;
+  max-width: 100%;
+}
+
+.tooltip-calculation {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.tooltip-section {
+  padding: 0.4rem;
+  background: rgba(22, 33, 62, 0.5);
+  border-radius: 4px;
+  width: 100%;
+}
+
+.tooltip-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.4rem;
+  margin: 0.2rem 0;
+  font-size: 0.75rem;
+  width: 100%;
+}
+
+
+.tooltip-icon {
+  width: 20px;
+  height: 20px;
+  image-rendering: crisp-edges;
+  image-rendering: pixelated;
+  flex-shrink: 0;
+}
+
+.tooltip-icon-fallback {
+  font-size: 1rem;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.tooltip-value {
+  font-family: monospace;
+  color: #8bc34a;
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
+.tooltip-cost {
+  color: #ff7043;
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
+.tooltip-profit {
+  color: #4caf50;
+  font-weight: 600;
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
+.tooltip-loss {
+  color: #ff5252;
+  font-weight: 600;
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
+.tooltip-formula {
+  margin-top: 0.5rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid #2a2a3e;
+  font-size: 0.85rem;
+  color: #a0a0a0;
+}
+
+.tooltip-divider {
+  height: 1px;
+  background: #2a2a3e;
+  margin: 0.5rem 0;
+}
